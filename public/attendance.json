@@ -1,0 +1,19 @@
+{
+  "name": "Daily Attendance NFT",
+  "description": "Proof of attendance for Base Daily interactions",
+  "image": "https://via.placeholder.com/400x400/0052FF/FFFFFF?text=Base+Daily",
+  "attributes": [
+    {
+      "trait_type": "Event",
+      "value": "Base Daily Interaction"
+    },
+    {
+      "trait_type": "Network",
+      "value": "Base Sepolia"
+    },
+    {
+      "trait_type": "Date",
+      "value": "2024"
+    }
+  ]
+}
