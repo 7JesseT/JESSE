@@ -9,8 +9,11 @@ import {
 } from "@coinbase/onchainkit/wallet"
 import { Address, Avatar, Name, Identity, EthBalance } from "@coinbase/onchainkit/identity"
 import { color } from "@coinbase/onchainkit/theme"
+import { useWalletPersistence } from "@/hooks/use-wallet-persistence"
 
 export function Header() {
+  const { clearConnection } = useWalletPersistence()
+
   return (
     <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 py-4">
@@ -43,7 +46,9 @@ export function Header() {
                 >
                   Wallet
                 </WalletDropdownLink>
-                <WalletDropdownDisconnect />
+                <WalletDropdownDisconnect 
+                  onDisconnect={clearConnection}
+                />
               </WalletDropdown>
             </Wallet>
           </div>

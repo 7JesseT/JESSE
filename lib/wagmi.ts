@@ -12,11 +12,23 @@ export const config = createConfig({
       preference: "smartWalletOnly",
     }),
     metaMask(),
-    walletConnect({ projectId }),
+    walletConnect({ 
+      projectId,
+      // Enable session persistence for WalletConnect
+      metadata: {
+        name: "Base Daily",
+        description: "Daily onchain interactions on Base Sepolia",
+        url: typeof window !== "undefined" ? window.location.origin : "",
+        icons: ["https://avatars.githubusercontent.com/u/37784886"]
+      }
+    }),
   ],
   transports: {
     [baseSepolia.id]: http(process.env.NEXT_PUBLIC_RPC_URL),
   },
+  // Enable auto-connect to restore previous wallet connections
+  autoConnect: true,
+  ssr: false,
 })
 
 declare module "wagmi" {
