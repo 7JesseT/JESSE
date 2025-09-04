@@ -1,11 +1,12 @@
 ## Base Daily
 
-Base Daily is a minimal, production-ready mini app showcasing daily onchain interactions on Base Sepolia. It includes wallet persistence, mobile-friendly connections, a Tip Jar for sending ETH, and an automated “daily feature + daily tx” flow.
+Base Daily is a minimal, production-ready mini app showcasing daily onchain interactions on Base Sepolia. It includes wallet persistence, mobile-friendly connections, a Tip Jar with recipient selection, and an automated "daily feature + daily tx" flow.
 
 ### Highlights
 - **Wallet persistence**: Auto-reconnects on reload using localStorage + Wagmi `autoConnect`.
 - **Mobile + Desktop**: WalletConnect v2, MetaMask, and Coinbase Wallet supported.
-- **Tip Jar**: Send native ETH or USDC (Base Sepolia) with presets and shipment history.
+- **Tip Jar with Recipients**: Send native ETH or USDC to Env Club, AI Club, or Dev Club with live tracking.
+- **Transaction Tracking**: Real-time totals by recipient with transaction history and Basescan links.
 - **Daily automation**: Ships 1 feature and processes 1 transaction after wallet connection each day.
 - **Modern stack**: Next.js 14, React 18, Wagmi, Viem, OnchainKit, Tailwind.
 
@@ -15,8 +16,10 @@ Base Daily is a minimal, production-ready mini app showcasing daily onchain inte
 Run the app and try:
 1) Connect a wallet (MetaMask / Coinbase / WalletConnect)
 2) Reload — it auto-reconnects
-3) Send a tip and see the Basescan link
-4) Check the Daily Features section to ship a feature and process a tx
+3) Select a recipient (Env Club, AI Club, or Dev Club) from the dropdown
+4) Send a tip and see the Basescan link with copyable transaction hash
+5) View live totals by recipient and transaction history
+6) Check the Daily Features section to ship a feature and process a tx
 
 ---
 
@@ -53,8 +56,7 @@ NEXT_PUBLIC_RPC_URL=https://sepolia.base.org
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_wc_project_id
 NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_onchainkit_key
 
-# Tip recipients and tokens
-NEXT_PUBLIC_TIP_ADDRESS=0xYourTipRecipientAddress
+# USDC token address (Base Sepolia)
 NEXT_PUBLIC_USDC_ADDRESS=0xYOUR_USDC_SEPOLIA_ADDRESS
 
 # Optional: change default paywall price
@@ -62,7 +64,8 @@ NEXT_PUBLIC_PAYWALL_PRICE=0.001
 ```
 
 Notes:
-- Tip Jar requires `NEXT_PUBLIC_TIP_ADDRESS` (ETH tips). For USDC tips, set `NEXT_PUBLIC_USDC_ADDRESS` (Base Sepolia USDC). If USDC is not configured, the UI will prompt to use ETH.
+- Recipient addresses are configured in `/config/recipients.ts` - update the placeholder addresses with actual club addresses.
+- For USDC tips, set `NEXT_PUBLIC_USDC_ADDRESS` (Base Sepolia USDC). If USDC is not configured, the UI will prompt to use ETH.
 - The app targets Base Sepolia by default.
 
 ### 4) Run
@@ -85,16 +88,24 @@ Open `http://localhost:3000`.
   - Saves `{ address, connectorId, chainId, connectedAt }` in localStorage.
   - Attempts silent reconnect on load; clears stale/invalid sessions.
 
-### Tip Jar (ETH + USDC)
+### Tip Jar (ETH + USDC) with Recipient Selection
 - File: `components/tip-jar.tsx`
-  - ETH: `useSendTransaction` with `parseEther(amount)` to `NEXT_PUBLIC_TIP_ADDRESS`.
-  - USDC: ERC-20 `transfer(recipient, amount)` with `parseUnits(amount, 6)` to `NEXT_PUBLIC_USDC_ADDRESS`.
-  - Currency selector, presets (0.5, 1, 2), manual input, recipient field.
-  - Success panel with tx hash, copy, and Basescan link. Stores `{ txHash, amount, currency, recipient, timestamp }` to `localStorage` under `baseDaily:txs`.
+  - Recipient dropdown: Choose from Env Club, AI Club, or Dev Club
+  - ETH: `useSendTransaction` with `parseEther(amount)` to selected recipient's ETH address.
+  - USDC: ERC-20 `transfer(recipient, amount)` with `parseUnits(amount, 6)` to selected recipient's USDC address.
+  - Currency selector, presets (0.5, 1, 2), manual input, recipient dropdown.
+  - Success panel with tx hash, copy, and Basescan link. 
+  - Live totals tracking by recipient with real-time updates.
   - Latest 3 shipments shown inline with link to `/shipments`.
+- File: `config/recipients.ts` - Configure recipient addresses for each club
+- File: `lib/tips-tracking.ts` - Track totals and transaction history
 
 ### Shipments
-- Page: `/shipments` displays all stored tips from `localStorage` with time, amount+currency, recipient, Basescan link, and copy tx hash.
+- Page: `/shipments` displays:
+  - Total tips by recipient (ETH and USDC)
+  - Recent tip transactions with recipient names, amounts, and Basescan links
+  - Legacy transactions from previous versions
+  - Copy transaction hash functionality
 
 ### Daily Features & Daily Transaction
 - Files: `lib/daily-features.ts`, `hooks/use-daily-features.ts`, `components/daily-features.tsx`
@@ -131,6 +142,10 @@ lib/
 
 ## Customization
 
+### Change recipient addresses
+- Edit `/config/recipients.ts` to update ETH and USDC addresses for each club
+- Replace placeholder addresses with actual club wallet addresses
+
 ### Change chain or RPC
 - Update `lib/wagmi.ts` chains and `NEXT_PUBLIC_RPC_URL`.
 
@@ -144,17 +159,39 @@ lib/
 
 ## Troubleshooting
 - Tip Jar button disabled
-  - Ensure wallet is connected and `NEXT_PUBLIC_TIP_ADDRESS` is a valid 0x address.
-- Wallet won’t auto-reconnect
+  - Ensure wallet is connected and a recipient is selected from the dropdown.
+  - Check that recipient addresses are configured in `/config/recipients.ts`.
+- Wallet won't auto-reconnect
   - Check browser console; verify localStorage is enabled and not cleared.
   - Confirm `autoConnect: true` in `lib/wagmi.ts` and no errors from connectors.
-- “Invalid request: params[0].to is a required field”
-  - Set `NEXT_PUBLIC_TIP_ADDRESS` and restart the dev server.
+- "Invalid request: params[0].to is a required field"
+  - Ensure recipient addresses are properly configured in `/config/recipients.ts`.
+- Totals not updating
+  - Check browser console for localStorage errors.
+  - Verify the tips tracking system is working by checking `/data/tips.json`.
 
 ---
 
 ## Deployment
-- Any Next.js-compatible platform (e.g., Vercel, Netlify, AWS). Ensure environment variables are configured in the host.
+
+### Deploy to Vercel
+1. Push your code to GitHub
+2. Connect your repository to Vercel
+3. Add environment variables in Vercel dashboard:
+   - `NEXT_PUBLIC_RPC_URL`
+   - `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`
+   - `NEXT_PUBLIC_ONCHAINKIT_API_KEY`
+   - `NEXT_PUBLIC_USDC_ADDRESS` (if using USDC tips)
+4. Deploy
+
+Or use the Vercel CLI:
+```bash
+npx vercel
+```
+
+### Environment Variables for Production
+- Update recipient addresses in `/config/recipients.ts` with production addresses
+- Ensure all environment variables are set in your deployment platform
 
 ---
 
@@ -162,107 +199,23 @@ lib/
 
 1. Connect MetaMask (or Base Wallet via WalletConnect).
 2. Ensure wallet is on Base Sepolia (RPC provided in `.env.local`).
-3. Use presets (0.5, 1, 2) or enter a custom amount.
-4. Send tip. After success, click the Basescan link to view the tx.
-5. Visit `/shipments` to see stored transactions (saved to `localStorage`).
+3. Select a recipient from the dropdown (Env Club, AI Club, or Dev Club).
+4. Choose currency (ETH or USDC) and use presets (0.5, 1, 2) or enter a custom amount.
+5. Send tip. After success, copy the transaction hash and click the Basescan link to view the tx.
+6. Verify totals update in real-time for the selected recipient.
+7. Visit `/shipments` to see all transactions with recipient names and totals.
 
-What I shipped: After tip, capture tx hash, copy it, and paste in the tracker.
+What I shipped: After tip, capture tx hash, copy it, and verify it appears in the success panel and totals display.
 
 ### Health Check
 - Endpoint: `/health` returns `OK`.
 - Script: `pnpm run health:curl` prints the curl command; then run it while dev server is running.
 
 ### 30s voiceover script
-“This is Base Daily. Connect your wallet, pick ETH or USDC, tap a preset like one ETH or enter your own amount, and send a tip on Base Sepolia. After it confirms, copy the transaction hash or jump straight to Basescan. Your last shipments show below, and you can see the full list at slash shipments. Clone the repo, set `.env.local`, and run `pnpm dev` to try it.”
+"This is Base Daily. Connect your wallet, select a recipient from the dropdown, pick ETH or USDC, tap a preset like one ETH or enter your own amount, and send a tip on Base Sepolia. After it confirms, copy the transaction hash or jump straight to Basescan. View live totals by recipient and see your transaction history. Clone the repo, set `.env.local`, and run `pnpm dev` to try it."
 
 ### 60s voiceover script
-“Welcome to Base Daily, a minimal Next.js starter for shipping onchain interactions fast. It’s wired up with Wagmi, Viem, and OnchainKit. The Tip Jar now supports ETH and USDC on Base Sepolia. Choose a currency, tap a preset—0.5, 1, or 2—or type a custom amount. ETH uses a native transfer; USDC calls ERC‑20 transfer with 6‑decimals. After success, we show the transaction hash with a copy button and a Basescan link. Every shipment is saved to localStorage and listed on the shipments page, so you can track what you shipped. Setup is simple: set the RPC URL, tip recipient, and optional USDC address in `.env.local`, then `pnpm dev`. There’s also a `/health` endpoint for sanity checks. Fork it, deploy to Vercel, and start shipping.”
-
-### Deploy (Vercel)
-Configure `NEXT_PUBLIC_USDC_ADDRESS` in the project settings if you want USDC tips enabled.
+"Welcome to Base Daily, a minimal Next.js starter for shipping onchain interactions fast. It's wired up with Wagmi, Viem, and OnchainKit. The Tip Jar now supports ETH and USDC on Base Sepolia with recipient selection. Choose from Env Club, AI Club, or Dev Club, pick a currency, tap a preset—0.5, 1, or 2—or type a custom amount. ETH uses a native transfer; USDC calls ERC‑20 transfer with 6‑decimals. After success, we show the transaction hash with a copy button and a Basescan link. Every tip is tracked by recipient with live totals and transaction history. Setup is simple: set the RPC URL, recipient addresses in config, and optional USDC address in `.env.local`, then `pnpm dev`. There's also a `/health` endpoint for sanity checks. Fork it, deploy to Vercel, and start shipping."
 
 ## License
-MIT
-
-# Base Daily
-
-A Next.js 14 application for daily onchain interactions on Base Sepolia, built with OnchainKit, wagmi, and TailwindCSS.
-
-## Features
-
-- **Connect Wallet**: Seamless wallet connection using OnchainKit
-- **Tip Jar**: Send ETH tips to creators on Base Sepolia
-- **Mint Attendance**: Mint ERC-1155 attendance NFTs
-- **Paywall**: Access premium content after payment
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+ and pnpm
-- A wallet with Base Sepolia ETH for testing
-
-### Installation
-
-1. Clone the repository:
-\`\`\`bash
-git clone <your-repo-url>
-cd base-daily
-\`\`\`
-
-2. Install dependencies:
-\`\`\`bash
-pnpm install
-\`\`\`
-
-3. Copy environment variables:
-\`\`\`bash
-cp .env.example .env.local
-\`\`\`
-
-4. Update `.env.local` with your configuration:
-   - `NEXT_PUBLIC_ONCHAINKIT_API_KEY`: Get from Coinbase Developer Platform
-   - Contract addresses for your deployed contracts
-   - Adjust tip address and paywall price as needed
-
-5. Run the development server:
-\`\`\`bash
-pnpm dev
-\`\`\`
-
-Open [http://localhost:3000](http://localhost:3000) to see the application.
-
-## Deployment
-
-### Deploy to Vercel
-
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Add environment variables in Vercel dashboard
-4. Deploy
-
-Or use the Vercel CLI:
-\`\`\`bash
-npx vercel
-\`\`\`
-
-## Project Structure
-
-- `/app` - Next.js 14 app router pages
-- `/components` - React components
-- `/lib` - Utility functions and configurations
-- `/public` - Static assets and metadata
-- `/api` - API routes for minting and payments
-
-## Technologies
-
-- Next.js 14 (App Router)
-- TypeScript
-- OnchainKit
-- wagmi/viem
-- TailwindCSS
-- Base Sepolia testnet
-
-## License
-
 MIT

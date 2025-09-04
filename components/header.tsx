@@ -46,9 +46,7 @@ export function Header() {
                 >
                   Wallet
                 </WalletDropdownLink>
-                <WalletDropdownDisconnect 
-                  onDisconnect={clearConnection}
-                />
+                <WalletDropdownDisconnect />
               </WalletDropdown>
             </Wallet>
           </div>

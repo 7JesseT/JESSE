@@ -7,8 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ExternalLink, Heart, Copy } from "lucide-react"
-import { DEFAULT_RECIPIENT, USDC_ADDRESS, BASESCAN_TX_URL, type SupportedCurrency } from "@/config/addresses"
+import { USDC_ADDRESS, BASESCAN_TX_URL, type SupportedCurrency } from "@/config/addresses"
+import { RECIPIENTS, getRecipientAddress } from "@/config/recipients"
+import { saveTipTransaction, getRecipientTotals, getAllTotals, type TipTransaction } from "@/lib/tips-tracking"
 
 type StoredTx = {
   txHash: string
@@ -36,10 +39,11 @@ const erc20Abi = [
 export function TipJar() {
   const [currency, setCurrency] = useState<SupportedCurrency>("ETH")
   const [amount, setAmount] = useState("0.5")
-  const [recipient, setRecipient] = useState<string>(DEFAULT_RECIPIENT)
+  const [selectedRecipientId, setSelectedRecipientId] = useState<string>(RECIPIENTS[0]?.id || "")
   const [error, setError] = useState<string>("")
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined)
   const [latest, setLatest] = useState<StoredTx[]>([])
+  const [totals, setTotals] = useState<Record<string, Record<SupportedCurrency, number>>>({})
 
   const { isConnected, chainId } = useAccount()
   const { sendTransaction, data: ethHash, isPending: isSendingEth } = useSendTransaction()
@@ -47,7 +51,9 @@ export function TipJar() {
   const { writeContract, data: usdcHash, isPending: isSendingUsdc } = useWriteContract()
   const { isLoading: isConfirmingUsdc, isSuccess: isUsdcSuccess } = useWaitForTransactionReceipt({ hash: usdcHash })
 
-  const isValidRecipient = useMemo(() => isAddress(recipient), [recipient])
+  const selectedRecipient = RECIPIENTS.find(r => r.id === selectedRecipientId)
+  const recipientAddress = selectedRecipient ? getRecipientAddress(selectedRecipientId, currency) : undefined
+  const isValidRecipient = useMemo(() => recipientAddress && isAddress(recipientAddress), [recipientAddress])
   const numericAmount = Number(amount)
   const isAmountValid = !Number.isNaN(numericAmount) && numericAmount > 0
   const isUsdcConfigured = typeof USDC_ADDRESS === "string" && USDC_ADDRESS.length === 42 && isAddress(USDC_ADDRESS)
@@ -62,6 +68,10 @@ export function TipJar() {
   }, [isEthSuccess, isUsdcSuccess])
 
   useEffect(() => {
+    setTotals(getAllTotals())
+  }, [isEthSuccess, isUsdcSuccess])
+
+  useEffect(() => {
     const h = ethHash || usdcHash
     if (h) setTxHash(h)
   }, [ethHash, usdcHash])
@@ -72,7 +82,7 @@ export function TipJar() {
         txHash: hash,
         amount: numericAmount,
         currency,
-        recipient,
+        recipient: recipientAddress || "",
         timestamp: new Date().toISOString(),
       }
       const raw = localStorage.getItem(STORAGE_KEY)
@@ -80,6 +90,20 @@ export function TipJar() {
       list.push(entry)
       localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
       setLatest(list.slice(-3).reverse())
+
+      // Save to new tips tracking system
+      if (selectedRecipient) {
+        const tipTransaction: TipTransaction = {
+          txHash: hash,
+          amount: numericAmount,
+          currency,
+          recipientId: selectedRecipientId,
+          recipientName: selectedRecipient.name,
+          timestamp: new Date().toISOString(),
+        }
+        saveTipTransaction(tipTransaction)
+        setTotals(getAllTotals())
+      }
     } catch {}
   }
 
@@ -97,7 +121,7 @@ export function TipJar() {
       setError("Please connect your wallet")
       return
     }
-    if (!isValidRecipient) {
+    if (!isValidRecipient || !recipientAddress) {
       setError("Recipient address is invalid or not configured")
       return
     }
@@ -108,7 +132,7 @@ export function TipJar() {
 
     try {
       if (currency === "ETH") {
-        sendTransaction({ to: recipient as `0x${string}`, value: parseEther(amount) })
+        sendTransaction({ to: recipientAddress, value: parseEther(amount) })
       } else {
         if (!isUsdcConfigured) {
           setError("USDC not configured — set NEXT_PUBLIC_USDC_ADDRESS or use ETH")
@@ -118,7 +142,7 @@ export function TipJar() {
           address: USDC_ADDRESS as `0x${string}`,
           abi: erc20Abi,
           functionName: "transfer",
-          args: [recipient as `0x${string}`, parseUnits(amount, 6)],
+          args: [recipientAddress, parseUnits(amount, 6)],
         })
       }
     } catch (e: any) {
@@ -172,7 +196,23 @@ export function TipJar() {
 
         <div className="space-y-2">
           <Label htmlFor="recipient">Recipient</Label>
-          <Input id="recipient" value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="0x..." />
+          <Select value={selectedRecipientId} onValueChange={setSelectedRecipientId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a recipient" />
+            </SelectTrigger>
+            <SelectContent>
+              {RECIPIENTS.map((recipient) => (
+                <SelectItem key={recipient.id} value={recipient.id}>
+                  {recipient.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedRecipient && (
+            <div className="text-xs text-muted-foreground">
+              {currency} Address: {getRecipientAddress(selectedRecipientId, currency)}
+            </div>
+          )}
         </div>
 
         <Button onClick={handleSend} disabled={disabled} className="w-full">
@@ -205,21 +245,40 @@ export function TipJar() {
           </div>
         )}
 
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Latest shipments</p>
-          {latest.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No shipments yet</p>
-          ) : (
-            <ul className="space-y-2">
-              {latest.map((t) => (
-                <li key={t.txHash} className="text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                  <span>{new Date(t.timestamp).toLocaleString()} — {t.amount} {t.currency}</span>
-                  <a className="text-blue-600 hover:underline" href={BASESCAN_TX_URL(t.txHash)} target="_blank" rel="noreferrer">Basescan</a>
-                </li>
-              ))}
-            </ul>
-          )}
-          <a href="/shipments" className="text-sm text-blue-600 hover:underline">View all shipments</a>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Total Tips by Recipient</p>
+            <div className="grid grid-cols-1 gap-2">
+              {RECIPIENTS.map((recipient) => {
+                const recipientTotals = totals[recipient.id] || { ETH: 0, USDC: 0 }
+                return (
+                  <div key={recipient.id} className="flex justify-between items-center p-2 bg-muted rounded-lg">
+                    <span className="text-sm font-medium">{recipient.name}</span>
+                    <div className="text-xs text-muted-foreground">
+                      ETH: {recipientTotals.ETH.toFixed(4)} | USDC: {recipientTotals.USDC.toFixed(2)}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Latest shipments</p>
+            {latest.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No shipments yet</p>
+            ) : (
+              <ul className="space-y-2">
+                {latest.map((t) => (
+                  <li key={t.txHash} className="text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                    <span>{new Date(t.timestamp).toLocaleString()} — {t.amount} {t.currency}</span>
+                    <a className="text-blue-600 hover:underline" href={BASESCAN_TX_URL(t.txHash)} target="_blank" rel="noreferrer">Basescan</a>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <a href="/shipments" className="text-sm text-blue-600 hover:underline">View all shipments</a>
+          </div>
         </div>
       </CardContent>
     </Card>

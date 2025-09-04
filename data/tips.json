@@ -1,0 +1,17 @@
+{
+  "totals": {
+    "env-club": {
+      "ETH": 0,
+      "USDC": 0
+    },
+    "ai-club": {
+      "ETH": 0,
+      "USDC": 0
+    },
+    "dev-club": {
+      "ETH": 0,
+      "USDC": 0
+    }
+  },
+  "transactions": []
+}
