@@ -1,6 +1,6 @@
 ## Base Daily
 
-Base Daily is a minimal, production-ready mini app showcasing daily onchain interactions on Base Sepolia. It includes wallet persistence, mobile-friendly connections, a Tip Jar with recipient selection, and an automated "daily feature + daily tx" flow.
+Base Daily is a minimal, production-ready mini app showcasing daily onchain interactions on Base Sepolia. It includes wallet persistence, mobile-friendly connections, a Tip Jar with recipient selection, Shipments Log, Attendance QR Minting, and an automated "daily feature + daily tx" flow.
 
 ### Highlights
 - **Wallet persistence**: Auto-reconnects on reload using localStorage + Wagmi `autoConnect`.
@@ -9,6 +9,77 @@ Base Daily is a minimal, production-ready mini app showcasing daily onchain inte
 - **Transaction Tracking**: Real-time totals by recipient with transaction history and Basescan links.
 - **Daily automation**: Ships 1 feature and processes 1 transaction after wallet connection each day.
 - **Modern stack**: Next.js 14, React 18, Wagmi, Viem, OnchainKit, Tailwind.
+
+---
+
+## New Features
+
+### Shipments Log
+- **Page:** `/shipments`
+- Displays a table of shipments with:
+  - Wallet address
+  - Token ID (any numeric value)
+  - Shipment date/time
+  - Transaction hash (clickable Basescan link)
+- Data is loaded from `/data/shipments.json`.
+- Manual entry form for new shipments (wallet, token ID, date/time, tx hash).
+- Table is searchable by wallet or token ID.
+- Export shipments as CSV.
+- All changes persist in `/data/shipments.json`.
+
+### Attendance QR Minting
+- **Page:** `/attendance`
+- Shows a QR code linking to `/api/mint?event=week1` (scan to mint attendance NFT).
+- Displays remaining supply counter (X of 50 mints left).
+- Mint button requires wallet connection (OnchainKit + wagmi).
+- Calls ERC-1155 smart contract mint function.
+- Uses `/public/attendance.json` for NFT metadata.
+- Updates `/data/mints.json` with wallet, event, time, and tx hash.
+- Enforces a maximum of 50 mints for the event.
+- Shows success message with transaction hash, Basescan link, and copy hash button.
+- All changes persist in `/data/mints.json`.
+
+### Admin Attendance View
+- **Page:** `/admin/attendance`
+- Displays all mints per event from `/data/mints.json`.
+- Searchable by wallet or event.
+- Export all mints as CSV.
+
+---
+
+## Mint Limit
+- Each attendance event (e.g., `week1`) is limited to 50 mints.
+- Once the limit is reached, minting is disabled and the UI displays a message.
+
+---
+
+## Testing Steps
+
+### Shipments Log
+1. Go to `/shipments`.
+2. Add a new shipment using the manual entry form.
+3. Search for shipments by wallet or token ID.
+4. Export the table as CSV and verify the file.
+5. Confirm that new shipments persist after reload.
+
+### Attendance QR Minting
+1. Go to `/attendance`.
+2. Scan the QR code or connect your wallet and click Mint.
+3. If under 50 mints, mint should succeed and show a success message with tx hash and Basescan link.
+4. Try minting after 50 mints to confirm the limit is enforced.
+5. Confirm that new mints persist after reload.
+
+### Admin Attendance View
+1. Go to `/admin/attendance`.
+2. Search for mints by wallet or event.
+3. Export the table as CSV and verify the file.
+4. Confirm that all mints are displayed and persist after reload.
+
+---
+
+## Data Persistence
+- All logs and mints are stored in `/data/shipments.json` and `/data/mints.json` at the project root.
+- These files are updated on every new entry and persist across sessions.
 
 ---
 

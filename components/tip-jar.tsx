@@ -219,6 +219,20 @@ export function TipJar() {
           {isLoading ? "Sending..." : `Send ${amount || ""} ${currency}`}
         </Button>
 
+        {/* Debug info for disabled button */}
+        {disabled && (
+          <div className="p-2 bg-yellow-50 dark:bg-yellow-950 rounded text-xs text-yellow-800 dark:text-yellow-200">
+            <div>Debug - Button disabled because:</div>
+            <div>• Wallet connected: {isConnected ? "Yes" : "No"}</div>
+            <div>• Valid recipient: {isValidRecipient ? "Yes" : "No"}</div>
+            <div>• Valid amount: {isAmountValid ? "Yes" : "No"}</div>
+            <div>• Loading: {isLoading ? "Yes" : "No"}</div>
+            <div>• USDC configured: {isUsdcConfigured ? "Yes" : "No"}</div>
+            <div>• Chain ID: {chainId}</div>
+            <div>• Recipient address: {recipientAddress || "None"}</div>
+          </div>
+        )}
+
         {error && (
           <div className="p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800 text-sm">
             {error}

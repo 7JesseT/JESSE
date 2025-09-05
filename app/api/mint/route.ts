@@ -2,9 +2,12 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createPublicClient, createWalletClient, http, parseAbi } from "viem"
 import { baseSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
+import { promises as fs } from "fs"
+import path from "path"
 
 const ATTENDANCE_CONTRACT = process.env.NEXT_PUBLIC_ATTENDANCE_CONTRACT as `0x${string}`
 const PRIVATE_KEY = process.env.MINTER_PRIVATE_KEY as `0x${string}`
+const MINTS_PATH = path.resolve(process.cwd(), "data/mints.json")
 
 // ERC-1155 ABI for minting
 const erc1155Abi = parseAbi([
@@ -14,7 +17,7 @@ const erc1155Abi = parseAbi([
 
 export async function POST(request: NextRequest) {
   try {
-    const { to, tokenId, amount } = await request.json()
+    const { to, tokenId, amount, event = "week1" } = await request.json()
 
     if (!to || !tokenId || !amount) {
       return NextResponse.json({ error: "Missing required parameters" }, { status: 400 })
@@ -24,12 +27,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Contract or private key not configured" }, { status: 500 })
     }
 
+    // Read mints.json
+    let mints: any[] = []
+    try {
+      const raw = await fs.readFile(MINTS_PATH, "utf-8")
+      mints = JSON.parse(raw)
+    } catch {
+      mints = []
+    }
+    const eventMints = mints.filter((m) => m.event === event)
+    if (eventMints.length >= 50) {
+      return NextResponse.json({ error: "Mint limit reached for this event" }, { status: 403 })
+    }
+
     // Create clients
     const publicClient = createPublicClient({
       chain: baseSepolia,
       transport: http(process.env.NEXT_PUBLIC_RPC_URL),
     })
-
     const account = privateKeyToAccount(PRIVATE_KEY)
     const walletClient = createWalletClient({
       account,
@@ -47,6 +62,16 @@ export async function POST(request: NextRequest) {
 
     // Wait for transaction confirmation
     const receipt = await publicClient.waitForTransactionReceipt({ hash })
+
+    // Update mints.json
+    const mintRecord = {
+      wallet: to,
+      event,
+      time: new Date().toISOString(),
+      txHash: hash,
+    }
+    mints.push(mintRecord)
+    await fs.writeFile(MINTS_PATH, JSON.stringify(mints, null, 2))
 
     return NextResponse.json({
       success: true,
