@@ -2,6 +2,7 @@ import { Header } from "@/components/header"
 import { TipJar } from "@/components/tip-jar"
 import { MintAttendance } from "@/components/mint-attendance"
 import { Paywall } from "@/components/paywall"
+import { PayPerFile } from "@/components/pay-per-file"
 import { DailyFeatures } from "@/components/daily-features"
 
 export default function HomePage() {
@@ -13,7 +14,7 @@ export default function HomePage() {
           <h1 className="text-4xl font-bold text-foreground">Base Daily</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Your daily onchain interactions on Base Sepolia. Tip creators, mint attendance NFTs, access premium
-            content, and enjoy daily feature updates with automatic transactions.
+            content, purchase files, and enjoy daily feature updates with automatic transactions.
           </p>
         </section>
 
@@ -30,10 +31,11 @@ export default function HomePage() {
           <h2 className="text-2xl font-semibold text-foreground mb-6 text-center">
             Onchain Interactions
           </h2>
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
             <TipJar />
             <MintAttendance />
             <Paywall />
+            <PayPerFile />
           </div>
         </section>
       </main>
