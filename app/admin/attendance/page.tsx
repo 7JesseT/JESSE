@@ -1,48 +1,53 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import axios from "axios";
+import { parseUnits } from "viem";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface Mint {
-  wallet: string
-  event: string
-  time: string
-  txHash: string
+  wallet: string;
+  event: string;
+  time: string;
+  txHash: string;
 }
 
 export default function AdminAttendancePage() {
-  const [mints, setMints] = useState<Mint[]>([])
-  const [search, setSearch] = useState("")
+  const [mints, setMints] = useState<Mint[]>([]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetch("/data/mints.json")
       .then((res) => res.json())
       .then(setMints)
-  }, [])
+      .catch((err) => console.error("Error fetching mints:", err));
+  }, []);
+
+  const filtered = mints.filter(
+    (m) =>
+      m.wallet.toLowerCase().includes(search.toLowerCase()) ||
+      m.event.toLowerCase().includes(search.toLowerCase())
+  );
 
   const handleExportCSV = () => {
     const csv = [
       ["Wallet", "Event", "Time", "Tx Hash"],
       ...filtered.map((m) => [m.wallet, m.event, m.time, m.txHash]),
     ]
-      .map((row) => row.join(","))
-      .join("\n")
-    const blob = new Blob([csv], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "attendance-mints.csv"
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+      .map((row) => row.map((val) => `"${val}"`).join(","))
+      .join("\n");
 
-  const filtered = mints.filter(
-    (m) =>
-      m.wallet.toLowerCase().includes(search.toLowerCase()) ||
-      m.event.toLowerCase().includes(search.toLowerCase())
-  )
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "attendance-mints.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="container mx-auto p-4">
@@ -58,7 +63,9 @@ export default function AdminAttendancePage() {
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-xs"
             />
-            <Button onClick={handleExportCSV} className="ml-auto w-fit">Export CSV</Button>
+            <Button onClick={handleExportCSV} className="ml-auto w-fit">
+              Export CSV
+            </Button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -72,7 +79,11 @@ export default function AdminAttendancePage() {
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={4} className="p-2 text-center text-muted-foreground">No mints found.</td></tr>
+                  <tr>
+                    <td colSpan={4} className="p-2 text-center text-muted-foreground">
+                      No mints found.
+                    </td>
+                  </tr>
                 ) : (
                   filtered.map((m, i) => (
                     <tr key={i} className="border-t">
@@ -89,5 +100,5 @@ export default function AdminAttendancePage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

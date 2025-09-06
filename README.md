@@ -1,3 +1,4 @@
+
 ## Base Daily
 
 Base Daily is a minimal, production-ready mini app showcasing daily onchain interactions on Base Sepolia. It includes wallet persistence, mobile-friendly connections, a Tip Jar with recipient selection, Shipments Log, Attendance QR Minting, and an automated "daily feature + daily tx" flow.
@@ -7,7 +8,8 @@ Base Daily is a minimal, production-ready mini app showcasing daily onchain inte
 - **Mobile + Desktop**: WalletConnect v2, MetaMask, and Coinbase Wallet supported.
 - **Tip Jar with Recipients**: Send native ETH or USDC to Env Club, AI Club, or Dev Club with live tracking.
 - **Transaction Tracking**: Real-time totals by recipient with transaction history and Basescan links.
-- **Daily automation**: Ships 1 feature and processes 1 transaction after wallet connection each day.
+- **Daily automation**: Ships 1 feature and processes 1 transaction after wallet connect
+ion each day.
 - **Modern stack**: Next.js 14, React 18, Wagmi, Viem, OnchainKit, Tailwind.
 
 ---
@@ -290,3 +292,109 @@ What I shipped: After tip, capture tx hash, copy it, and verify it appears in th
 
 ## License
 MIT
+
+## Pay-per-File Feature
+
+### Overview
+A complete pay-per-file system where admins can upload PDFs and users pay onchain (USDC/ETH) to unlock download tokens. Features server-side payment verification, secure token-based downloads, and purchase tracking.
+
+### Pages
+- **`/files`** - Public file marketplace with buy/download functionality
+- **`/admin/files`** - Admin interface for uploading files and setting prices
+
+### API Endpoints
+- **`POST /api/upload`** - Admin file upload (multipart/form-data)
+- **`POST /api/verify-payment`** - Server-side transaction verification
+- **`POST /api/purchase`** - Complete purchase flow and token generation
+- **`GET /api/download?token=xxx`** - Secure file download with token validation
+- **`GET /api/files`** - Fetch all available files
+- **`GET /api/purchases?buyer=0x...`** - Fetch user's purchase history
+
+### Payment Flow
+1. User clicks "Buy File" on `/files` page
+2. Wallet prompts for USDC transfer to file recipient
+3. Transaction is sent and confirmed on Base Sepolia
+4. Client calls `/api/purchase` with tx hash, file ID, and buyer address
+5. Server verifies payment using viem/wagmi against blockchain
+6. If valid, generates 24-hour download token and stores purchase record
+7. User receives download link with token
+
+### Data Storage
+- **`/data/files.json`** - File metadata (id, title, description, price, recipient)
+- **`/data/purchases.json`** - Purchase records (token, fileId, txHash, buyer, expiry)
+- **`/public/files/`** - Uploaded PDF files (ephemeral on Vercel)
+
+### Security Features
+- Server-side payment verification using blockchain data
+- Token-based downloads with 24-hour expiry
+- Purchase tracking prevents duplicate payments
+- File access validation on every download request
+
+### Environment Variables
+```env
+# Base Sepolia RPC URL
+NEXT_PUBLIC_RPC_URL=https://sepolia.base.org
+
+# USDC Token Address on Base Sepolia
+NEXT_PUBLIC_USDC_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
+
+# Paywall recipient address (where payments go)
+NEXT_PUBLIC_PAYWALL_RECIPIENT=0xYOUR_RECIPIENT_ADDRESS
+
+# Default price in USDC (can be overridden per file)
+NEXT_PUBLIC_PAYWALL_PRICE_USDC=1
+
+# Base URL for server-side API calls
+NEXT_PUBLIC_BASE_URL=https://your-deployment-url.example
+```
+
+### Testing the Pay-per-File Feature
+
+#### Admin Upload
+1. Go to `/admin/files`
+2. Upload a PDF file
+3. Set title, description, price (USDC), and recipient address
+4. Click "Upload File"
+5. Verify file appears on `/files` page
+
+#### User Purchase
+1. Go to `/files` page
+2. Connect wallet (MetaMask/Coinbase Wallet)
+3. Click "Buy File" on any available file
+4. Approve USDC transfer in wallet
+5. Wait for transaction confirmation
+6. Download link appears automatically
+7. Click "Download File" to get the PDF
+
+#### Getting USDC on Base Sepolia
+- **Base Sepolia Faucet**: https://bridge.base.org/deposit
+- **Alchemy Faucet**: https://sepoliafaucet.com/
+- **Chainlink Faucet**: https://faucets.chain.link/base-sepolia
+
+### Production Considerations
+- **File Storage**: Vercel doesn't persist `/public` uploads between deployments
+- **Recommended**: Use AWS S3, Cloudinary, or similar for production file storage
+- **Database**: Consider PostgreSQL/MongoDB for production metadata storage
+- **Security**: Implement rate limiting and additional validation for production
+
+### File Structure
+```
+app/
+  files/page.tsx              # Public file marketplace
+  admin/files/page.tsx         # Admin upload interface
+  api/
+    upload/route.ts           # File upload endpoint
+    verify-payment/route.ts   # Payment verification
+    purchase/route.ts        # Purchase completion
+    download/route.ts         # Token-based download
+    files/route.ts           # Fetch files
+    purchases/route.ts       # Fetch purchases
+
+lib/
+  files.ts                    # File metadata management
+  purchases.ts               # Purchase tracking
+
+data/
+  files.json                 # File metadata storage
+  purchases.json            # Purchase records
+```
