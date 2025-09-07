@@ -162,6 +162,38 @@ export default function FilesPage() {
     }
   };
 
+  const handleDemoUnlock = async (file: FileMetadata) => {
+    setPurchasingFile(file.id);
+    setPurchaseStatus(prev => ({ ...prev, [file.id]: 'unlocking' }));
+
+    try {
+      const response = await fetch('/api/purchase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileId: file.id,
+          demoMode: true,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setPurchaseStatus(prev => ({ ...prev, [file.id]: 'completed' }));
+        await fetchPurchases(); // Refresh purchases
+      } else {
+        setPurchaseStatus(prev => ({ ...prev, [file.id]: 'failed' }));
+      }
+    } catch (error) {
+      console.error('Demo unlock error:', error);
+      setPurchaseStatus(prev => ({ ...prev, [file.id]: 'failed' }));
+    } finally {
+      setPurchasingFile(null);
+    }
+  };
+
   const getPurchaseStatus = (fileId: string) => {
     return purchaseStatus[fileId] || 'idle';
   };
@@ -202,7 +234,7 @@ export default function FilesPage() {
       {!isConnected && (
         <Alert className="mb-6">
           <AlertDescription>
-            Please connect your wallet to purchase files.
+            <strong>Demo Mode Available:</strong> You can unlock files instantly without a wallet connection, or connect your wallet for onchain payments.
           </AlertDescription>
         </Alert>
       )}
@@ -248,38 +280,64 @@ export default function FilesPage() {
                       Download File
                     </Button>
                   ) : (
-                    <Button
-                      className="w-full"
-                      onClick={() => handleBuyFile(file)}
-                      disabled={!isConnected || status !== 'idle'}
-                    >
-                      {status === 'preparing' && (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Preparing...
-                        </>
+                    <div className="space-y-2">
+                      {isConnected ? (
+                        <Button
+                          className="w-full"
+                          onClick={() => handleBuyFile(file)}
+                          disabled={status !== 'idle'}
+                        >
+                          {status === 'preparing' && (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Preparing...
+                            </>
+                          )}
+                          {status === 'pending' && (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Waiting for confirmation...
+                            </>
+                          )}
+                          {status === 'verifying' && (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Verifying payment...
+                            </>
+                          )}
+                          {status === 'completed' && (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Purchase Complete!
+                            </>
+                          )}
+                          {status === 'failed' && 'Purchase Failed'}
+                          {status === 'idle' && 'Buy with USDC'}
+                        </Button>
+                      ) : (
+                        <Button
+                          className="w-full"
+                          variant="outline"
+                          onClick={() => handleDemoUnlock(file)}
+                          disabled={status !== 'idle'}
+                        >
+                          {status === 'unlocking' && (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Unlocking...
+                            </>
+                          )}
+                          {status === 'completed' && (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Unlocked!
+                            </>
+                          )}
+                          {status === 'failed' && 'Unlock Failed'}
+                          {status === 'idle' && 'Unlock Instantly (Demo)'}
+                        </Button>
                       )}
-                      {status === 'pending' && (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Waiting for confirmation...
-                        </>
-                      )}
-                      {status === 'verifying' && (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Verifying payment...
-                        </>
-                      )}
-                      {status === 'completed' && (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Purchase Complete!
-                        </>
-                      )}
-                      {status === 'failed' && 'Purchase Failed'}
-                      {status === 'idle' && 'Buy File'}
-                    </Button>
+                    </div>
                   )}
 
                   {txHash && (

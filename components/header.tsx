@@ -46,6 +46,12 @@ export function Header() {
                 >
                   Wallet
                 </WalletDropdownLink>
+                <WalletDropdownLink
+                  icon="receipt"
+                  href="/checkout"
+                >
+                  Checkout
+                </WalletDropdownLink>
                 <WalletDropdownDisconnect />
               </WalletDropdown>
             </Wallet>

@@ -1,3 +1,34 @@
 {
-  "files": []
+  "files": [
+    {
+      "id": "base-guide-2024",
+      "filename": "base-development-guide.pdf",
+      "title": "Base Development Guide 2024",
+      "description": "Complete guide to building on Base with Next.js, Wagmi, and OnchainKit. Includes wallet integration, payment flows, and deployment strategies.",
+      "priceUsd": 5.0,
+      "priceToken": "USDC",
+      "recipient": "0x29E2481F55Ac8fb3f7c223E018688D98a514fCca",
+      "uploadedAt": "2024-01-15T10:00:00.000Z"
+    },
+    {
+      "id": "nft-course-advanced",
+      "filename": "advanced-nft-course.pdf",
+      "title": "Advanced NFT Development Course",
+      "description": "Learn to build, deploy, and mint NFTs on Base. Covers smart contracts, metadata, IPFS, and frontend integration.",
+      "priceUsd": 10.0,
+      "priceToken": "USDC",
+      "recipient": "0x29E2481F55Ac8fb3f7c223E018688D98a514fCca",
+      "uploadedAt": "2024-01-16T14:30:00.000Z"
+    },
+    {
+      "id": "defi-protocol-guide",
+      "filename": "defi-protocol-tutorial.pdf",
+      "title": "DeFi Protocol Tutorial",
+      "description": "Build a complete DeFi protocol on Base including liquidity pools, yield farming, and governance tokens.",
+      "priceUsd": 15.0,
+      "priceToken": "USDC",
+      "recipient": "0x29E2481F55Ac8fb3f7c223E018688D98a514fCca",
+      "uploadedAt": "2024-01-17T09:15:00.000Z"
+    }
+  ]
 }

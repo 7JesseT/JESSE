@@ -293,10 +293,80 @@ What I shipped: After tip, capture tx hash, copy it, and verify it appears in th
 ## License
 MIT
 
-## Pay-per-File Feature
+## Day 6 — Creator Checkout
 
 ### Overview
-A complete pay-per-file system where admins can upload PDFs and users pay onchain (USDC/ETH) to unlock download tokens. Features server-side payment verification, secure token-based downloads, and purchase tracking.
+A complete creator checkout system for digital assets. Users can purchase digital assets with USDC on Base Sepolia and receive shareable receipts with Basescan links. Features server-side payment verification, receipt generation, and purchase tracking.
+
+### Pages
+- **`/checkout`** - Digital asset marketplace with buy buttons
+- **`/receipt/[id]`** - Individual receipt display with sharing functionality
+
+### API Endpoints
+- **`POST /api/record-receipt`** - Server-side transaction verification and receipt generation
+- **`GET /api/my-receipts?wallet=0x...`** - Fetch user's purchase receipts
+- **`GET /api/receipt/[id]`** - Fetch individual receipt details
+
+### Payment Flow
+1. User visits `/checkout` page and connects wallet
+2. User clicks "Buy Now" on any digital asset
+3. Wallet prompts for USDC transfer to asset recipient
+4. Transaction is sent and confirmed on Base Sepolia
+5. Client calls `/api/record-receipt` with tx hash, asset ID, and buyer address
+6. Server verifies payment using viem/wagmi against blockchain
+7. If valid, generates receipt and stores in `/data/receipts.json`
+8. User is redirected to `/receipt/[id]` with shareable receipt
+
+### Data Storage
+- **`/data/receipts.json`** - Receipt records (id, txHash, assetId, buyer, amount, currency, timestamp)
+- **`/lib/assets.ts`** - Digital asset definitions and metadata
+
+### Features
+- Server-side payment verification using blockchain data
+- Shareable receipts with Basescan links
+- Purchase tracking prevents duplicate payments
+- Ownership checking for already purchased assets
+- Social sharing with prefilled text
+
+### Testing the Creator Checkout Feature
+
+#### User Purchase
+1. Go to `/checkout` page
+2. Connect wallet (MetaMask/Coinbase Wallet)
+3. Click "Buy Now" on any available digital asset
+4. Approve USDC transfer in wallet
+5. Wait for transaction confirmation
+6. Receipt page opens automatically with Basescan link
+7. Click "Share Receipt" to share on social media
+
+#### Getting USDC on Base Sepolia
+- **Base Sepolia Faucet**: https://bridge.base.org/deposit
+- **Alchemy Faucet**: https://sepoliafaucet.com/
+- **Chainlink Faucet**: https://faucets.chain.link/base-sepolia
+
+### Environment Variables
+```env
+# Base Sepolia RPC URL
+NEXT_PUBLIC_RPC_URL=https://sepolia.base.org
+
+# USDC Token Address on Base Sepolia
+NEXT_PUBLIC_USDC_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
+
+# Paywall recipient address (where payments go)
+NEXT_PUBLIC_PAYWALL_RECIPIENT=0xYOUR_RECIPIENT_ADDRESS
+```
+
+---
+
+## Pay-per-File Feature (Dual Mode)
+
+### Overview
+A complete pay-per-file system supporting both **Onchain Mode** (USDC/ETH payments) and **Demo/Offline Mode** (instant unlock without wallet). Features server-side payment verification, secure token-based downloads, and purchase tracking.
+
+### Dual Mode Support
+- **Onchain Mode**: Users with connected wallets pay in USDC or ETH to unlock files
+- **Demo/Offline Mode**: No wallet connection needed; instant unlock with temporary tokens
+- **Flexible UX**: Users can choose between onchain payments or demo mode
 
 ### Pages
 - **`/files`** - Public file marketplace with buy/download functionality
@@ -311,13 +381,21 @@ A complete pay-per-file system where admins can upload PDFs and users pay onchai
 - **`GET /api/purchases?buyer=0x...`** - Fetch user's purchase history
 
 ### Payment Flow
-1. User clicks "Buy File" on `/files` page
+
+#### Onchain Mode (Wallet Connected)
+1. User clicks "Buy with USDC" on `/files` page
 2. Wallet prompts for USDC transfer to file recipient
 3. Transaction is sent and confirmed on Base Sepolia
 4. Client calls `/api/purchase` with tx hash, file ID, and buyer address
 5. Server verifies payment using viem/wagmi against blockchain
 6. If valid, generates 24-hour download token and stores purchase record
 7. User receives download link with token
+
+#### Demo/Offline Mode (No Wallet)
+1. User clicks "Unlock Instantly (Demo)" on `/files` page
+2. Client calls `/api/purchase` with `{ fileId, demoMode: true }`
+3. Server skips payment verification and generates token immediately
+4. User receives download link with token (24-hour expiry)
 
 ### Data Storage
 - **`/data/files.json`** - File metadata (id, title, description, price, recipient)
@@ -352,19 +430,27 @@ NEXT_PUBLIC_BASE_URL=https://your-deployment-url.example
 
 #### Admin Upload
 1. Go to `/admin/files`
-2. Upload a PDF file
-3. Set title, description, price (USDC), and recipient address
-4. Click "Upload File"
-5. Verify file appears on `/files` page
+2. Enter admin key: `base-daily-admin-2024`
+3. Upload a PDF file
+4. Set title, description, price (USDC), and recipient address
+5. Click "Upload File"
+6. Verify file appears on `/files` page
 
-#### User Purchase
+#### Onchain Mode Testing
 1. Go to `/files` page
 2. Connect wallet (MetaMask/Coinbase Wallet)
-3. Click "Buy File" on any available file
+3. Click "Buy with USDC" on any available file
 4. Approve USDC transfer in wallet
 5. Wait for transaction confirmation
 6. Download link appears automatically
 7. Click "Download File" to get the PDF
+
+#### Demo Mode Testing
+1. Go to `/files` page (no wallet connection needed)
+2. Click "Unlock Instantly (Demo)" on any available file
+3. File unlocks immediately without payment
+4. Click "Download File" to get the PDF
+5. Token expires after 24 hours
 
 #### Getting USDC on Base Sepolia
 - **Base Sepolia Faucet**: https://bridge.base.org/deposit

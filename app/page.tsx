@@ -4,6 +4,9 @@ import { MintAttendance } from "@/components/mint-attendance"
 import { Paywall } from "@/components/paywall"
 import { PayPerFile } from "@/components/pay-per-file"
 import { DailyFeatures } from "@/components/daily-features"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { ShoppingCart } from "lucide-react"
 
 export default function HomePage() {
   return (
@@ -16,6 +19,14 @@ export default function HomePage() {
             Your daily onchain interactions on Base Sepolia. Tip creators, mint attendance NFTs, access premium
             content, purchase files, and enjoy daily feature updates with automatic transactions.
           </p>
+          <div className="flex justify-center">
+            <Link href="/checkout">
+              <Button size="lg" className="mt-4">
+                <ShoppingCart className="h-5 w-5 mr-2" />
+                Creator Checkout
+              </Button>
+            </Link>
+          </div>
         </section>
 
         {/* Daily Features Section */}

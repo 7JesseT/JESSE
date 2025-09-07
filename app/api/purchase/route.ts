@@ -5,11 +5,19 @@ import { getFileById } from '@/lib/files';
 
 export async function POST(request: NextRequest) {
   try {
-    const { txHash, fileId, buyerAddress } = await request.json();
+    const { txHash, fileId, buyerAddress, demoMode } = await request.json();
 
-    if (!txHash || !fileId || !buyerAddress) {
+    if (!fileId) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'File ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // For demo mode, we don't need txHash or buyerAddress
+    if (!demoMode && (!txHash || !buyerAddress)) {
+      return NextResponse.json(
+        { error: 'Transaction hash and buyer address are required for onchain mode' },
         { status: 400 }
       );
     }
@@ -23,28 +31,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify payment
-    const verifyResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/verify-payment`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chain: 'sepolia',
-        txHash,
-        expectedRecipient: file.recipient,
-        expectedAmount: file.priceUsd,
-        currency: file.priceToken,
-      }),
-    });
+    let verifyResult = { ok: true, details: {} };
 
-    const verifyResult = await verifyResponse.json();
+    // Skip payment verification for demo mode
+    if (!demoMode) {
+      // Verify payment for onchain mode
+      const verifyResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/verify-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chain: 'sepolia',
+          txHash,
+          expectedRecipient: file.recipient,
+          expectedAmount: file.priceUsd,
+          currency: file.priceToken,
+        }),
+      });
 
-    if (!verifyResult.ok) {
-      return NextResponse.json(
-        { error: verifyResult.reason || 'Payment verification failed' },
-        { status: 400 }
-      );
+      verifyResult = await verifyResponse.json();
+
+      if (!verifyResult.ok) {
+        return NextResponse.json(
+          { error: verifyResult.reason || 'Payment verification failed' },
+          { status: 400 }
+        );
+      }
     }
 
     // Create purchase record
@@ -55,8 +68,8 @@ export async function POST(request: NextRequest) {
     const purchase: Purchase = {
       token,
       fileId,
-      txHash,
-      buyer: buyerAddress,
+      txHash: txHash || 'demo-mode',
+      buyer: buyerAddress || 'demo-user',
       timestamp: now.toISOString(),
       expiry: expiry.toISOString(),
     };

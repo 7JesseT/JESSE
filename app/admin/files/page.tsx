@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,63 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, CheckCircle, Loader2 } from 'lucide-react';
 
 export default function AdminFilesPage() {
+  // Simple admin protection - in production, implement proper authentication
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminKey, setAdminKey] = useState('');
+
+  useEffect(() => {
+    // Check if admin key is stored in localStorage
+    const storedKey = localStorage.getItem('admin-key');
+    if (storedKey === 'base-daily-admin-2024') {
+      setIsAdmin(true);
+    }
+  }, []);
+
+  const handleAdminLogin = () => {
+    if (adminKey === 'base-daily-admin-2024') {
+      localStorage.setItem('admin-key', adminKey);
+      setIsAdmin(true);
+    } else {
+      alert('Invalid admin key');
+    }
+  };
+
+  if (!isAdmin) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-md mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle>Admin Access</CardTitle>
+              <CardDescription>
+                Enter admin key to access file upload functionality
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="adminKey">Admin Key</Label>
+                <Input
+                  id="adminKey"
+                  type="password"
+                  value={adminKey}
+                  onChange={(e) => setAdminKey(e.target.value)}
+                  placeholder="Enter admin key"
+                  className="mt-1"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Demo key: <code className="bg-muted px-1 rounded">base-daily-admin-2024</code>
+                </p>
+              </div>
+              <Button onClick={handleAdminLogin} className="w-full">
+                Access Admin Panel
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -98,10 +155,23 @@ export default function AdminFilesPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Admin - Upload Files</h1>
-        <p className="text-muted-foreground">
-          Upload PDF files for pay-per-download functionality
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Admin - Upload Files</h1>
+            <p className="text-muted-foreground">
+              Upload PDF files for pay-per-download functionality
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              localStorage.removeItem('admin-key');
+              setIsAdmin(false);
+            }}
+          >
+            Logout
+          </Button>
+        </div>
       </div>
 
       <Alert className="mb-6">
