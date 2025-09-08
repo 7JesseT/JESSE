@@ -290,8 +290,149 @@ What I shipped: After tip, capture tx hash, copy it, and verify it appears in th
 ### 60s voiceover script
 "Welcome to Base Daily, a minimal Next.js starter for shipping onchain interactions fast. It's wired up with Wagmi, Viem, and OnchainKit. The Tip Jar now supports ETH and USDC on Base Sepolia with recipient selection. Choose from Env Club, AI Club, or Dev Club, pick a currency, tap a preset—0.5, 1, or 2—or type a custom amount. ETH uses a native transfer; USDC calls ERC‑20 transfer with 6‑decimals. After success, we show the transaction hash with a copy button and a Basescan link. Every tip is tracked by recipient with live totals and transaction history. Setup is simple: set the RPC URL, recipient addresses in config, and optional USDC address in `.env.local`, then `pnpm dev`. There's also a `/health` endpoint for sanity checks. Fork it, deploy to Vercel, and start shipping."
 
-## License
-MIT
+---
+
+## Admin Dashboard (Day 7)
+
+### Overview
+A comprehensive admin dashboard for event analytics and transaction management. The dashboard aggregates mints/purchases per event, shows unique wallets, totals, and allows CSV export. Features secure admin-only access, time period filtering, and real-time analytics.
+
+### Pages
+- **`/admin/dashboard`** - Main admin dashboard with event analytics and transaction management
+
+### API Endpoints
+- **`GET /api/admin/events`** - Fetch all available events
+- **`GET /api/admin/event-stats?event=week1&period=7d`** - Get event statistics and transactions
+- **`POST /api/admin/export-csv`** - Export event data as CSV file
+
+### Features
+- **Event Analytics**: View totals for mints, purchases, and unique wallets per event
+- **Time Filtering**: Filter data by last 24h, 7d, 30d, or all time
+- **Transaction Management**: Paginated table showing all transactions with wallet addresses, tx hashes, types, tokens, amounts, and timestamps
+- **CSV Export**: Download transaction data as CSV files with automatic filename generation
+- **Admin Security**: Demo admin gate using `NEXT_PUBLIC_ADMIN_KEY` environment variable
+- **Real-time Updates**: Live data from JSON files with loading states and error handling
+
+### Data Sources
+- **`/data/mints.json`** - Mint records (wallet, event, time, txHash)
+- **`/data/purchases.json`** - Purchase records (token, fileId, txHash, buyer, timestamp, expiry)
+- **`/data/shipments.json`** - Shipment records (wallet, tokenId, date, txHash)
+
+### Admin Access
+The dashboard uses a simple demo admin gate for security:
+
+1. **Environment Variable**: Set `NEXT_PUBLIC_ADMIN_KEY` in your environment
+2. **Access Methods**:
+   - URL parameter: `/admin/dashboard?adminKey=YOUR_KEY`
+   - Local storage: Key is automatically saved after first successful access
+3. **Authorization**: Dashboard only shows data if the provided key matches the environment variable
+
+### Environment Variables
+```env
+# Admin dashboard access key (required for demo mode)
+NEXT_PUBLIC_ADMIN_KEY=your-secure-admin-key-here
+```
+
+### Testing the Admin Dashboard
+
+#### Setup
+1. Set `NEXT_PUBLIC_ADMIN_KEY` in your `.env.local` file
+2. Add sample data to `/data/mints.json` and `/data/purchases.json` (already included)
+3. Run `pnpm dev` and navigate to `/admin/dashboard?adminKey=YOUR_KEY`
+
+#### Verification Steps
+1. **Access Control**: 
+   - Visit `/admin/dashboard` without key → should show "Not authorized"
+   - Visit `/admin/dashboard?adminKey=YOUR_KEY` → should show dashboard
+   - Refresh page → should remain authorized (localStorage)
+
+2. **Event Analytics**:
+   - Select different events from dropdown
+   - Verify KPIs match manual counts from JSON files
+   - Test time period filters (24h, 7d, 30d, all)
+
+3. **Transaction Table**:
+   - Verify transactions list includes sample data
+   - Test pagination (50 rows per page)
+   - Check transaction details (wallet, txHash, type, token, amount, timestamp)
+
+4. **CSV Export**:
+   - Click "Export CSV" button
+   - Verify file downloads with correct filename format: `event-week1-2025-01-08.csv`
+   - Open CSV in spreadsheet app and verify data integrity
+
+5. **Data Persistence**:
+   - Add new entries to JSON files
+   - Refresh dashboard and verify new data appears
+   - Test that changes persist across sessions
+
+### API Response Format
+
+#### Event Stats API (`/api/admin/event-stats`)
+```json
+{
+  "event": "week1",
+  "totalMints": 3,
+  "totalPurchases": 2,
+  "uniqueWallets": 4,
+  "transactions": [
+    {
+      "wallet": "0x1234...",
+      "txHash": "0xabcd...",
+      "type": "mint",
+      "token": "ETH",
+      "amount": 1,
+      "timestamp": "2025-01-08T10:00:00Z"
+    }
+  ]
+}
+```
+
+#### CSV Export Format
+```csv
+"Wallet","Transaction Hash","Type","Token","Amount","Timestamp"
+"0x1234...","0xabcd...","mint","ETH","1","2025-01-08T10:00:00Z"
+```
+
+### Production Considerations
+- **Security**: Replace demo admin gate with proper authentication system
+- **Data Storage**: Consider database migration for large datasets
+- **Performance**: Implement caching for frequently accessed data
+- **Monitoring**: Add logging and error tracking for production use
+
+### File Structure
+```
+app/
+  admin/
+    dashboard/page.tsx          # Admin dashboard UI
+  api/
+    admin/
+      events/route.ts          # Fetch events endpoint
+      event-stats/route.ts     # Event statistics endpoint
+      export-csv/route.ts      # CSV export endpoint
+
+lib/
+  admin.ts                     # Admin utilities and helpers
+  mints.ts                     # Mint data management
+  purchases.ts                 # Purchase data management
+
+data/
+  mints.json                   # Mint records
+  purchases.json              # Purchase records
+  shipments.json              # Shipment records
+```
+
+### Acceptance Checklist
+- [ ] `/admin/dashboard` accessible with correct admin key and blocked otherwise
+- [ ] Dashboard shows correct aggregates for sample events
+- [ ] CSV export downloads valid CSV file with expected columns
+- [ ] API `/admin/event-stats` returns correct JSON structure
+- [ ] `pnpm dev` runs without errors
+- [ ] Time period filters change totals correctly
+- [ ] Pagination works for large transaction lists
+- [ ] Admin key persists in localStorage after first access
+
+---
 
 ## Day 6 — Creator Checkout
 
