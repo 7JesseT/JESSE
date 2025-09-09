@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ExternalLink, Heart, Copy } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { ExternalLink, Heart, Copy, Gift } from "lucide-react"
 import { USDC_ADDRESS, BASESCAN_TX_URL, type SupportedCurrency } from "@/config/addresses"
 import { RECIPIENTS, getRecipientAddress } from "@/config/recipients"
 import { saveTipTransaction, getRecipientTotals, getAllTotals, type TipTransaction } from "@/lib/tips-tracking"
@@ -21,7 +22,15 @@ type StoredTx = {
   timestamp: string
 }
 
+type InvitePrefill = {
+  recipientId: string
+  currency: SupportedCurrency
+  amount: string
+  token: string
+}
+
 const STORAGE_KEY = "baseDaily:txs"
+const INVITE_PREFILL_KEY = "baseDaily:invitePrefill"
 
 const erc20Abi = [
   {
@@ -44,8 +53,9 @@ export function TipJar() {
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined)
   const [latest, setLatest] = useState<StoredTx[]>([])
   const [totals, setTotals] = useState<Record<string, Record<SupportedCurrency, number>>>({})
+  const [invitePrefill, setInvitePrefill] = useState<InvitePrefill | null>(null)
 
-  const { isConnected, chainId } = useAccount()
+  const { isConnected, chainId, address } = useAccount()
   const { sendTransaction, data: ethHash, isPending: isSendingEth } = useSendTransaction()
   const { isLoading: isConfirmingEth, isSuccess: isEthSuccess } = useWaitForTransactionReceipt({ hash: ethHash })
   const { writeContract, data: usdcHash, isPending: isSendingUsdc } = useWriteContract()
@@ -67,6 +77,27 @@ export function TipJar() {
     } catch {}
   }, [isEthSuccess, isUsdcSuccess])
 
+  // Handle invite prefill
+  useEffect(() => {
+    try {
+      const prefillRaw = localStorage.getItem(INVITE_PREFILL_KEY)
+      if (prefillRaw) {
+        const prefill: InvitePrefill = JSON.parse(prefillRaw)
+        setInvitePrefill(prefill)
+        
+        // Apply prefill values
+        setSelectedRecipientId(prefill.recipientId)
+        setCurrency(prefill.currency)
+        setAmount(prefill.amount)
+        
+        // Clear prefill from localStorage
+        localStorage.removeItem(INVITE_PREFILL_KEY)
+      }
+    } catch (error) {
+      console.error('Error handling invite prefill:', error)
+    }
+  }, [])
+
   useEffect(() => {
     setTotals(getAllTotals())
   }, [isEthSuccess, isUsdcSuccess])
@@ -76,7 +107,7 @@ export function TipJar() {
     if (h) setTxHash(h)
   }, [ethHash, usdcHash])
 
-  const saveTx = (hash: string) => {
+  const saveTx = async (hash: string) => {
     try {
       const entry: StoredTx = {
         txHash: hash,
@@ -103,6 +134,30 @@ export function TipJar() {
         }
         saveTipTransaction(tipTransaction)
         setTotals(getAllTotals())
+      }
+
+      // If this was from an invite, mark the invite as used
+      if (invitePrefill) {
+        try {
+          const response = await fetch('/api/invite/use', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              token: invitePrefill.token,
+              txHash: hash,
+              walletAddress: address || 'unknown'
+            }),
+          })
+
+          if (response.ok) {
+            // Clear the invite prefill state
+            setInvitePrefill(null)
+          }
+        } catch (error) {
+          console.error('Failed to mark invite as used:', error)
+        }
       }
     } catch {}
   }
@@ -167,6 +222,12 @@ export function TipJar() {
         <CardTitle className="flex items-center gap-2">
           <Heart className="h-5 w-5 text-red-500" />
           Tip Jar
+          {invitePrefill && (
+            <Badge variant="secondary" className="ml-2">
+              <Gift className="h-3 w-3 mr-1" />
+              Using invite — one-time link
+            </Badge>
+          )}
         </CardTitle>
         <CardDescription>Send tips on Base Sepolia (ETH or USDC)</CardDescription>
       </CardHeader>

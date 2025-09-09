@@ -434,6 +434,144 @@ data/
 
 ---
 
+## Invite Links (Day 8)
+
+### Overview
+A comprehensive invite link system that allows admins to generate one-time-use invite links. These links prefill the TipJar with recipient and amount information, expire after first successful use (or optionally after a set expiry time), and provide full lifecycle management through an admin interface.
+
+### Pages
+- **`/invite/create`** - Admin page for creating invite links with QR code generation
+- **`/invite/[token]`** - Client page that handles invite redemption and TipJar prefill
+- **`/admin/invites`** - Admin interface for managing all invite links
+
+### API Endpoints
+- **`POST /api/invite/create`** - Create new invite link with recipient, currency, amount, and optional expiry
+- **`GET /api/invite/[token]`** - Fetch invite details and validate status
+- **`POST /api/invite/use`** - Mark invite as used after successful tip transaction
+- **`POST /api/invite/revoke`** - Revoke unused invite links
+- **`GET /api/admin/invites`** - Fetch all invites for admin management
+- **`POST /api/admin/invites`** - Export invites as CSV
+
+### Features
+- **One-time Use**: Invites automatically expire after first successful use
+- **Optional Expiry**: Set custom expiry times (1 hour, 1 day, 1 week, 1 month)
+- **TipJar Prefill**: Automatically fills recipient, currency, and amount in TipJar
+- **QR Code Generation**: Visual QR codes for easy sharing
+- **Admin Management**: Full lifecycle management with status tracking
+- **CSV Export**: Export all invite data for analysis
+- **Security**: Admin-only access with `NEXT_PUBLIC_ADMIN_KEY` authentication
+
+### How Invite Links Work
+
+#### Creating Invites
+1. Admin visits `/invite/create` with admin key
+2. Selects recipient (Env/AI/Dev Club), currency (ETH/USDC), and amount
+3. Optionally sets expiry time
+4. Clicks "Generate Invite" to create unique token and URL
+5. Receives shareable URL and QR code
+
+#### Using Invites
+1. User clicks invite link (`/invite/[token]`)
+2. System validates invite (unused, not expired)
+3. If valid, stores prefill data in localStorage and redirects to TipJar
+4. TipJar shows "Using invite — one-time link" badge
+5. User sends tip with prefilled values
+6. After successful transaction, invite is automatically marked as used
+
+#### Admin Management
+1. Admin visits `/admin/invites` to view all invites
+2. See status (unused/used/expired), usage details, and timestamps
+3. Copy invite links or test them directly
+4. Revoke unused invites manually
+5. Export all invite data as CSV
+
+### Data Storage
+- **`/data/invites.json`** - Stores all invite records with full lifecycle tracking
+- **Invite Object Structure**:
+  ```json
+  {
+    "id": "uuid",
+    "token": "shortString",
+    "recipientId": "env-club",
+    "currency": "ETH",
+    "amount": "0.5",
+    "createdAt": "2025-01-08T10:00:00Z",
+    "expiryAt": "2025-01-09T10:00:00Z",
+    "used": false,
+    "usedBy": null,
+    "usedAt": null,
+    "txHash": null
+  }
+  ```
+
+### Environment Variables
+```env
+# Admin access key (required for invite management)
+NEXT_PUBLIC_ADMIN_KEY=your-secure-admin-key-here
+
+# Base URL for invite links (optional, defaults to localhost:3000)
+NEXT_PUBLIC_BASE_URL=https://your-domain.com
+```
+
+### Testing Steps
+
+#### Create Invite
+1. Set `NEXT_PUBLIC_ADMIN_KEY` in `.env.local`
+2. Visit `/invite/create?adminKey=YOUR_KEY`
+3. Create invite for Env Club @ 0.5 ETH
+4. Copy the generated URL and QR code
+
+#### Test Invite Flow
+1. Open invite URL in incognito window
+2. Verify TipJar is prefilled with correct recipient and amount
+3. Send test tip on Base Sepolia
+4. Confirm invite is marked as used after transaction
+
+#### Admin Management
+1. Visit `/admin/invites?adminKey=YOUR_KEY`
+2. Verify invite shows as "used" with transaction details
+3. Test revoke functionality on unused invites
+4. Export CSV and verify data integrity
+
+### Security Considerations
+- **Token Generation**: Uses UUID v4 for secure, unpredictable tokens
+- **Replay Prevention**: Server validates invite status before marking as used
+- **Race Conditions**: Atomic file writes prevent concurrent usage issues
+- **Admin Access**: All admin functions require `NEXT_PUBLIC_ADMIN_KEY`
+- **Data Persistence**: Invites stored in JSON files (ephemeral on Vercel; use database for production)
+
+### Production Notes
+- **Database Migration**: Replace JSON file storage with proper database for production
+- **Authentication**: Implement proper admin authentication system
+- **Monitoring**: Add logging for invite creation, usage, and errors
+- **Rate Limiting**: Consider rate limiting for invite creation and usage
+
+### File Structure
+```
+app/
+  invite/
+    create/page.tsx              # Invite creation interface
+    [token]/page.tsx            # Invite redemption page
+  admin/
+    invites/page.tsx            # Admin invite management
+  api/
+    invite/
+      create/route.ts           # Create invite endpoint
+      [token]/route.ts         # Fetch invite endpoint
+      use/route.ts             # Mark invite as used
+      revoke/route.ts          # Revoke invite endpoint
+    admin/
+      invites/route.ts         # Admin invite management
+
+lib/
+  invites.ts                   # Invite data management utilities
+
+data/
+  invites.json                 # Invite records storage
+```
+
+---
+
 ## Day 6 — Creator Checkout
 
 ### Overview

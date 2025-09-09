@@ -1,0 +1,17 @@
+{
+  "invites": [
+    {
+      "id": "216c1236-52bc-4f61-9579-603eb17452ae",
+      "token": "09a1c0ca",
+      "createdAt": "2025-09-09T11:12:47.372Z",
+      "used": false,
+      "usedBy": null,
+      "usedAt": null,
+      "txHash": null,
+      "recipientId": "env-club",
+      "currency": "ETH",
+      "amount": "0.5",
+      "expiryAt": "2025-10-09T11:12:47.370Z"
+    }
+  ]
+}
