@@ -763,3 +763,81 @@ data/
   files.json                 # File metadata storage
   purchases.json            # Purchase records
 ```
+
+---
+
+## Mini-app Shell (Day 9)
+
+### Overview
+A compact "mini-app shell" route optimized for being opened inside the Base mobile app's in-app browser. The shell presents the TipJar as a single, focused screen with large touch targets, no extraneous navigation, and graceful wallet connect behavior for in-app wallets and WalletConnect.
+
+### Route
+- **`/mini-app`** - Compact TipJar interface optimized for mobile in-app browsers
+
+### Features
+- **Mobile-First Design**: Large touch targets (56px+), optimized for mobile viewports
+- **In-App Browser Detection**: Automatically detects Base app environment and adapts UX
+- **Compact Interface**: Minimal header with app logo, focused TipJar functionality
+- **Large Buttons**: Full-width connect wallet, preset amounts, and send tip buttons
+- **Inline Receipts**: View recent tips in-page modal instead of navigation
+- **No External Popups**: All actions stay within the same page or use modals
+- **WalletConnect Fallback**: Graceful handling when in-app wallet isn't available
+- **Prefill Support**: Reads invite prefill from localStorage for seamless invite flows
+
+### Mobile Optimizations
+- **Safe Area Support**: Uses `env(safe-area-inset-*)` utilities for proper mobile spacing
+- **Viewport Meta**: Optimized viewport settings for in-app browsers
+- **Theme Color**: Base blue theme color for native app integration
+- **Touch Targets**: All interactive elements meet accessibility guidelines (48-56px minimum)
+- **No Hover States**: Avoids tooltips/popovers that require hover interaction
+
+### Testing in Base Mobile App
+1. **Deploy to Vercel**: Push your code and deploy to get a public URL
+2. **Open in Base App**: 
+   - Copy the Vercel URL (e.g., `https://your-app.vercel.app/mini-app`)
+   - Open Base mobile app
+   - Navigate to the browser/webview section
+   - Paste the URL and navigate to `/mini-app`
+3. **Test Wallet Connection**: 
+   - Tap "Connect Wallet" - should use Base app's in-app wallet
+   - If external wallet needed, WalletConnect flow will open
+4. **Test Tip Flow**:
+   - Select recipient, amount, and send tip
+   - Verify success panel shows tx hash and Basescan link
+   - Test "View Receipts" modal functionality
+
+### Design Notes
+- **In-App Limitations**: Avoid `window.open()` and external navigation
+- **WalletConnect**: Shows QR code for external wallets when in-app wallet unavailable
+- **Responsive**: Adapts to different mobile screen sizes and orientations
+- **Performance**: Minimal bundle size, no heavy animations or large images
+
+### File Structure
+```
+app/
+  mini-app/
+    page.tsx              # Main mini-app route
+    layout.tsx            # Mobile-optimized metadata
+    manifest.json         # PWA manifest for installability
+
+components/
+  mini-tipjar.tsx        # Compact TipJar component
+```
+
+### Manifest Configuration
+The mini-app includes a `manifest.json` with recommended Base mini-app fields:
+```json
+{
+  "name": "Base Daily Mini Tip Jar",
+  "short_name": "Base Daily", 
+  "start_url": "/mini-app",
+  "display": "standalone",
+  "theme_color": "#0052FF"
+}
+```
+
+### Environment Detection
+The mini-app automatically detects in-app browser environments:
+- **Base App**: Checks `navigator.userAgent` for "Base" string
+- **Standalone**: Detects `display-mode: standalone` for PWA-like behavior
+- **Adaptive UX**: Disables external links and optimizes for in-app experience

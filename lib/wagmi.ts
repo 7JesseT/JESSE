@@ -1,19 +1,15 @@
 import { http, createConfig } from "wagmi"
 import { baseSepolia } from "wagmi/chains"
-import { coinbaseWallet, metaMask, walletConnect } from "wagmi/connectors"
+import { metaMask, walletConnect } from "wagmi/connectors"
 
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo"
 
-// Only create WalletConnect connector on client side
+// Prioritize MetaMask as the primary wallet option
 const connectors = [
-  coinbaseWallet({
-    appName: "Base Daily",
-    preference: "smartWalletOnly",
-  }),
   metaMask(),
 ]
 
-// Add WalletConnect only on client side to avoid SSR issues
+// Add WalletConnect as fallback option on client side to avoid SSR issues
 if (typeof window !== "undefined") {
   connectors.push(
     walletConnect({ 

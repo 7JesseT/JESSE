@@ -4,6 +4,7 @@ import { MintAttendance } from "@/components/mint-attendance"
 import { Paywall } from "@/components/paywall"
 import { PayPerFile } from "@/components/pay-per-file"
 import { DailyFeatures } from "@/components/daily-features"
+import { WalletTestCard } from "@/components/wallet-test-card"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ShoppingCart } from "lucide-react"
@@ -27,6 +28,11 @@ export default function HomePage() {
               </Button>
             </Link>
           </div>
+        </section>
+
+        {/* Wallet Connection Test */}
+        <section className="flex justify-center">
+          <WalletTestCard />
         </section>
 
         {/* Daily Features Section */}
