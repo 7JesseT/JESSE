@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPublicClient, http, parseUnits, formatUnits } from 'viem';
-import { baseSepolia } from 'viem/chains';
+import { base, baseSepolia } from 'viem/chains';
+import { getNetworkConfig, NetworkType } from '@/lib/networks';
 
-const USDC_ADDRESS = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+const USDC_ADDRESS_SEPOLIA = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+const USDC_ADDRESS_MAINNET = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Base mainnet USDC
 const USDC_DECIMALS = 6;
 
 // USDC ABI for transfer events
@@ -18,9 +20,25 @@ const USDC_ABI = [
   },
 ] as const;
 
+// Get USDC address for network
+const getUsdcAddress = (network: NetworkType): string => {
+  return network === 'mainnet' ? USDC_ADDRESS_MAINNET : USDC_ADDRESS_SEPOLIA;
+};
+
+// Get public client for network
+const getPublicClientForNetwork = (network: NetworkType) => {
+  const config = getNetworkConfig(network);
+  const chain = network === 'mainnet' ? base : baseSepolia;
+  
+  return createPublicClient({
+    chain,
+    transport: http(config.rpcUrl),
+  });
+};
+
 export async function POST(request: NextRequest) {
   try {
-    const { chain, txHash, expectedRecipient, expectedAmount, currency } = await request.json();
+    const { chain, txHash, expectedRecipient, expectedAmount, currency, network } = await request.json();
 
     if (!txHash || !expectedRecipient || !expectedAmount || !currency) {
       return NextResponse.json(
@@ -29,18 +47,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (chain !== 'sepolia') {
+    // Determine network - prefer explicit network param, fallback to chain param
+    const targetNetwork: NetworkType = network || (chain === 'mainnet' ? 'mainnet' : 'sepolia');
+
+    // Validate network
+    if (!['sepolia', 'mainnet'].includes(targetNetwork)) {
       return NextResponse.json(
-        { error: 'Only Base Sepolia is supported' },
+        { error: 'Invalid network. Must be sepolia or mainnet' },
         { status: 400 }
       );
     }
 
-    const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'https://sepolia.base.org';
-    const client = createPublicClient({
-      chain: baseSepolia,
-      transport: http(rpcUrl),
-    });
+    const client = getPublicClientForNetwork(targetNetwork);
+    const usdcAddress = getUsdcAddress(targetNetwork);
 
     // Get transaction details
     const tx = await client.getTransaction({ hash: txHash as `0x${string}` });
@@ -67,7 +86,7 @@ export async function POST(request: NextRequest) {
     if (currency === 'USDC') {
       // Check for USDC transfer events
       const logs = await client.getLogs({
-        address: USDC_ADDRESS,
+        address: usdcAddress as `0x${string}`,
         event: USDC_ABI[0],
         fromBlock: receipt.blockNumber,
         toBlock: receipt.blockNumber,
@@ -108,6 +127,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Additional safety check for mainnet transactions
+    if (targetNetwork === 'mainnet') {
+      const paywallRecipient = process.env.NEXT_PUBLIC_PAYWALL_RECIPIENT;
+      if (paywallRecipient && expectedRecipient.toLowerCase() !== paywallRecipient.toLowerCase()) {
+        return NextResponse.json(
+          { ok: false, reason: 'Mainnet transaction recipient mismatch' },
+          { status: 400 }
+        );
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       details: {
@@ -116,6 +146,7 @@ export async function POST(request: NextRequest) {
         currency,
         recipient: expectedRecipient,
         blockNumber: receipt.blockNumber,
+        network: targetNetwork,
       },
     });
   } catch (error) {

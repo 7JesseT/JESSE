@@ -1,6 +1,7 @@
 "use client"
 
 import { WalletConnection } from "@/components/wallet-connection"
+import { NetworkToggle } from "@/components/network-toggle"
 
 export function Header() {
   return (
@@ -15,6 +16,7 @@ export function Header() {
           </div>
 
           <div className="flex items-center space-x-4">
+            <NetworkToggle compact />
             <WalletConnection />
           </div>
         </div>

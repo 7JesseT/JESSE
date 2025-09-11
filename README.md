@@ -1,7 +1,7 @@
 
 ## Base Daily
 
-Base Daily is a minimal, production-ready mini app showcasing daily onchain interactions on Base Sepolia. It includes wallet persistence, mobile-friendly connections, a Tip Jar with recipient selection, Shipments Log, Attendance QR Minting, and an automated "daily feature + daily tx" flow.
+Base Daily is a minimal, production-ready mini app showcasing daily onchain interactions on Base. It includes wallet persistence, mobile-friendly connections, a Tip Jar with recipient selection, Shipments Log, Attendance QR Minting, and an automated "daily feature + daily tx" flow. The app supports both Base Sepolia (testnet) and Base Mainnet with a robust network toggle system.
 
 ### Highlights
 - **Wallet persistence**: Auto-reconnects on reload using localStorage + Wagmi `autoConnect`.
@@ -10,11 +10,119 @@ Base Daily is a minimal, production-ready mini app showcasing daily onchain inte
 - **Transaction Tracking**: Real-time totals by recipient with transaction history and Basescan links.
 - **Daily automation**: Ships 1 feature and processes 1 transaction after wallet connect
 ion each day.
+- **Mainnet Flip**: Robust network toggle between Base Sepolia (testnet) and Base Mainnet with safety features.
 - **Modern stack**: Next.js 14, React 18, Wagmi, Viem, OnchainKit, Tailwind.
 
 ---
 
-## New Features
+## Mainnet Flip Feature
+
+### Overview
+A robust network toggle system that allows the app to run on both Base Sepolia (testnet) and Base Mainnet with comprehensive safety features. Users can switch between networks with a single toggle, but mainnet transactions require explicit confirmation and balance checks to prevent accidental real-fund payments.
+
+### Key Features
+- **Network Toggle**: Switch between Sepolia and Mainnet without reload
+- **Balance Checks**: Automatic ETH/USDC balance validation for mainnet transactions
+- **Mainnet Confirmation**: Required "CONFIRM MAINNET" typing for real-fund transactions
+- **Safety Warnings**: Clear visual indicators for mainnet vs testnet operations
+- **Session Persistence**: Network preference and confirmation state persist across sessions
+- **Server-side Verification**: API endpoints support both networks with proper RPC routing
+
+### Safety Features
+- **Low Balance Warning**: Blocks mainnet transactions if ETH balance < $2 worth
+- **USDC Balance Check**: Validates USDC balance for USDC transactions on mainnet
+- **Confirmation Modal**: Requires typing "CONFIRM MAINNET" to enable mainnet sending
+- **Session TTL**: Mainnet confirmation expires after 24 hours for security
+- **Visual Indicators**: Red warnings and "REAL FUNDS" labels for mainnet operations
+
+### Environment Variables
+```env
+# Network Configuration
+NEXT_PUBLIC_RPC_URL_SEPOLIA=https://sepolia.base.org
+NEXT_PUBLIC_RPC_URL_MAINNET=https://mainnet.base.org
+NEXT_PUBLIC_DEFAULT_NETWORK=sepolia
+
+# Legacy support (backward compatibility)
+NEXT_PUBLIC_RPC_URL=https://sepolia.base.org
+```
+
+### Testing Mainnet Safely
+
+#### Setup
+1. **Fund Test Wallet**: Add small amount of ETH/USDC to a test wallet on Base Mainnet
+2. **Set Environment**: Configure both RPC URLs in `.env.local`
+3. **Start with Sepolia**: Always test on Sepolia first, then switch to mainnet
+
+#### Testing Steps
+1. **Network Toggle**:
+   - Load app (defaults to Sepolia)
+   - Toggle to mainnet → confirmation modal appears
+   - Type "CONFIRM MAINNET" → network switches
+   - Verify chain badge shows "Base Mainnet"
+
+2. **Balance Checks**:
+   - Connect wallet with low ETH balance (< 0.001 ETH)
+   - Try to send tip → should show low balance warning
+   - Add sufficient ETH → warning disappears
+
+3. **Mainnet Transaction**:
+   - Ensure adequate balance and confirmation
+   - Send small test tip (e.g., 0.001 ETH)
+   - Verify transaction appears on mainnet Basescan
+   - Check that confirmation persists for 24 hours
+
+4. **Server Verification**:
+   - Test `/api/verify-payment` with mainnet transaction hash
+   - Verify correct RPC is used for verification
+   - Check that mainnet transactions are properly validated
+
+#### Safety Checklist
+- [ ] Network toggle works without reload
+- [ ] Mainnet confirmation modal requires exact text
+- [ ] Low balance warnings block transactions
+- [ ] Balance checks work for both ETH and USDC
+- [ ] Server-side verification supports both networks
+- [ ] Confirmation expires after 24 hours
+- [ ] Visual indicators clearly show mainnet vs testnet
+
+### Vercel Deployment
+
+#### Environment Variables
+Add these to your Vercel project settings:
+```env
+NEXT_PUBLIC_RPC_URL_SEPOLIA=https://sepolia.base.org
+NEXT_PUBLIC_RPC_URL_MAINNET=https://mainnet.base.org
+NEXT_PUBLIC_DEFAULT_NETWORK=sepolia
+```
+
+#### RPC Provider Setup
+- **Sepolia**: Use public Base Sepolia RPC or Alchemy/Infura endpoint
+- **Mainnet**: **Important**: Set up a reliable mainnet RPC provider
+  - Recommended: Alchemy, Infura, or Base's official mainnet RPC
+  - Avoid using public RPCs for production mainnet operations
+  - Consider rate limits and reliability for your use case
+
+### File Structure
+```
+lib/
+  networks.ts                    # Network configuration and helpers
+
+components/
+  network-toggle.tsx             # Network toggle with confirmation
+  mainnet-confirm-modal.tsx      # CONFIRM MAINNET modal
+
+app/api/verify-payment/
+  route.ts                       # Updated to support both networks
+```
+
+### Production Considerations
+- **RPC Reliability**: Use enterprise-grade RPC providers for mainnet
+- **Rate Limits**: Monitor API usage and implement proper rate limiting
+- **Error Handling**: Robust error handling for network switching failures
+- **Monitoring**: Track mainnet transaction success rates and errors
+- **Security**: Regular security audits for mainnet transaction flows
+
+---
 
 ### Shipments Log
 - **Page:** `/shipments`
@@ -125,7 +233,12 @@ yarn
 ### 3) Configure environment
 Create `.env.local` in the project root:
 ```env
-NEXT_PUBLIC_RPC_URL=https://sepolia.base.org
+# Network Configuration
+NEXT_PUBLIC_RPC_URL_SEPOLIA=https://sepolia.base.org
+NEXT_PUBLIC_RPC_URL_MAINNET=https://mainnet.base.org
+NEXT_PUBLIC_DEFAULT_NETWORK=sepolia
+
+# Wallet Configuration
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_wc_project_id
 NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_onchainkit_key
 
@@ -134,12 +247,16 @@ NEXT_PUBLIC_USDC_ADDRESS=0xYOUR_USDC_SEPOLIA_ADDRESS
 
 # Optional: change default paywall price
 NEXT_PUBLIC_PAYWALL_PRICE=0.001
+
+# Legacy support (backward compatibility)
+NEXT_PUBLIC_RPC_URL=https://sepolia.base.org
 ```
 
 Notes:
 - Recipient addresses are configured in `/config/recipients.ts` - update the placeholder addresses with actual club addresses.
 - For USDC tips, set `NEXT_PUBLIC_USDC_ADDRESS` (Base Sepolia USDC). If USDC is not configured, the UI will prompt to use ETH.
-- The app targets Base Sepolia by default.
+- The app defaults to Base Sepolia but can be switched to Base Mainnet using the network toggle.
+- **Mainnet Safety**: Always test on Sepolia first. Mainnet transactions require explicit confirmation and adequate balance.
 
 ### 4) Run
 ```bash

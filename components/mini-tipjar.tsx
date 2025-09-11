@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { useAccount, useSendTransaction, useWaitForTransactionReceipt, useWriteContract } from "wagmi"
-import { parseEther, parseUnits, isAddress } from "viem"
+import { useAccount, useSendTransaction, useWaitForTransactionReceipt, useWriteContract, useBalance, useContractRead } from "wagmi"
+import { parseEther, parseUnits, isAddress, formatEther, formatUnits } from "viem"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +14,9 @@ import { USDC_ADDRESS, BASESCAN_TX_URL, type SupportedCurrency } from "@/config/
 import { RECIPIENTS, getRecipientAddress } from "@/config/recipients"
 import { saveTipTransaction, type TipTransaction } from "@/lib/tips-tracking"
 import { ConnectWallet, Wallet } from "@coinbase/onchainkit/wallet"
+import { NetworkToggle } from "@/components/network-toggle"
+import { MainnetConfirmModal } from "@/components/mainnet-confirm-modal"
+import { getCurrentNetworkConfig, isMainnetConfirmed, NetworkType } from "@/lib/networks"
 
 type StoredTx = {
   txHash: string
@@ -66,12 +69,36 @@ export function MiniTipJar() {
   const [invitePrefill, setInvitePrefill] = useState<InvitePrefill | null>(null)
   const [showReceipts, setShowReceipts] = useState(false)
   const [latest, setLatest] = useState<StoredTx[]>([])
+  const [currentNetwork, setCurrentNetwork] = useState<NetworkType>("sepolia")
+  const [showMainnetModal, setShowMainnetModal] = useState(false)
 
   const { isConnected, chainId, address } = useAccount()
   const { sendTransaction, data: ethHash, isPending: isSendingEth } = useSendTransaction()
   const { isLoading: isConfirmingEth, isSuccess: isEthSuccess } = useWaitForTransactionReceipt({ hash: ethHash })
   const { writeContract, data: usdcHash, isPending: isSendingUsdc } = useWriteContract()
   const { isLoading: isConfirmingUsdc, isSuccess: isUsdcSuccess } = useWaitForTransactionReceipt({ hash: usdcHash })
+
+  // Balance checking
+  const { data: ethBalance } = useBalance({
+    address,
+    chainId: getCurrentNetworkConfig().chain.id,
+  })
+
+  const { data: usdcBalance } = useContractRead({
+    address: USDC_ADDRESS as `0x${string}`,
+    abi: [
+      {
+        name: "balanceOf",
+        type: "function",
+        stateMutability: "view",
+        inputs: [{ name: "account", type: "address" }],
+        outputs: [{ name: "", type: "uint256" }],
+      },
+    ],
+    functionName: "balanceOf",
+    args: address ? [address] : undefined,
+    chainId: getCurrentNetworkConfig().chain.id,
+  })
 
   const selectedRecipient = RECIPIENTS.find(r => r.id === selectedRecipientId)
   const recipientAddress = selectedRecipient ? getRecipientAddress(selectedRecipientId, currency) : undefined
@@ -81,6 +108,26 @@ export function MiniTipJar() {
   const isUsdcConfigured = typeof USDC_ADDRESS === "string" && USDC_ADDRESS.length === 42 && isAddress(USDC_ADDRESS)
   const isLoading = isSendingEth || isSendingUsdc || isConfirmingEth || isConfirmingUsdc
   const inAppBrowser = isInAppBrowser()
+
+  // Network configuration
+  const networkConfig = getCurrentNetworkConfig()
+  const isMainnet = currentNetwork === "mainnet"
+  const isMainnetConfirmedFlag = isMainnetConfirmed()
+
+  // Balance checking for mainnet
+  const ethBalanceFormatted = ethBalance ? parseFloat(formatEther(ethBalance.value)) : 0
+  const usdcBalanceFormatted = usdcBalance ? parseFloat(formatUnits(usdcBalance, 6)) : 0
+  
+  // Conservative estimate: $2 worth of ETH (assuming $2000/ETH)
+  const minEthBalance = 0.001 // ~$2 at $2000/ETH
+  const hasLowBalance = isMainnet && ethBalanceFormatted < minEthBalance
+  const hasLowUsdcBalance = isMainnet && currency === "USDC" && usdcBalanceFormatted < 2
+
+  // Initialize network from sessionStorage
+  useEffect(() => {
+    const config = getCurrentNetworkConfig()
+    setCurrentNetwork(config.type)
+  }, [])
 
   useEffect(() => {
     try {
@@ -193,6 +240,24 @@ export function MiniTipJar() {
       return
     }
 
+    // Mainnet safety checks
+    if (isMainnet) {
+      if (!isMainnetConfirmedFlag) {
+        setShowMainnetModal(true)
+        return
+      }
+      
+      if (hasLowBalance) {
+        setError("Low balance — sending on mainnet requires at least $2 for gas. Type CONFIRM MAINNET to enable.")
+        return
+      }
+      
+      if (hasLowUsdcBalance) {
+        setError("Insufficient USDC balance for mainnet transaction")
+        return
+      }
+    }
+
     try {
       if (currency === "ETH") {
         sendTransaction({ to: recipientAddress, value: parseEther(amount) })
@@ -213,7 +278,7 @@ export function MiniTipJar() {
     }
   }
 
-  const disabled = !isConnected || !isValidRecipient || !isAmountValid || isLoading || (currency === "USDC" && !isUsdcConfigured)
+  const disabled = !isConnected || !isValidRecipient || !isAmountValid || isLoading || (currency === "USDC" && !isUsdcConfigured) || (isMainnet && !isMainnetConfirmedFlag) || (isMainnet && hasLowBalance)
 
   const handleCopy = async () => {
     if (!txHash) return
@@ -239,9 +304,57 @@ export function MiniTipJar() {
               </Badge>
             )}
           </CardTitle>
-          <CardDescription className="text-sm">Send tips on Base Sepolia</CardDescription>
+          <CardDescription className="text-sm">
+            Send tips on {networkConfig.name}
+            {isMainnet && (
+              <span className="text-red-600 font-medium ml-1">— REAL FUNDS</span>
+            )}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Network Toggle */}
+          <NetworkToggle 
+            onNetworkChange={setCurrentNetwork}
+            showLabel={true}
+          />
+
+          {/* Mainnet Balance Warning */}
+          {isMainnet && hasLowBalance && (
+            <div className="p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
+              <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                ⚠️ Low Balance Warning
+              </p>
+              <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                Your ETH balance ({ethBalanceFormatted.toFixed(4)} ETH) is below the recommended minimum for mainnet transactions. 
+                You need at least {minEthBalance} ETH (~$2) for gas fees.
+              </p>
+            </div>
+          )}
+
+          {/* Mainnet USDC Balance Warning */}
+          {isMainnet && currency === "USDC" && hasLowUsdcBalance && (
+            <div className="p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
+              <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                ⚠️ Insufficient USDC Balance
+              </p>
+              <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                Your USDC balance ({usdcBalanceFormatted.toFixed(2)} USDC) is insufficient for this transaction.
+              </p>
+            </div>
+          )}
+
+          {/* Mainnet Confirmation Required */}
+          {isMainnet && !isMainnetConfirmedFlag && (
+            <div className="p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                🔒 Mainnet Confirmation Required
+              </p>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                You must confirm that you understand this will use real funds before sending on mainnet.
+              </p>
+            </div>
+          )}
+
           {/* Connect Wallet Button */}
           {!isConnected && (
             <div className="text-center">
@@ -432,6 +545,17 @@ export function MiniTipJar() {
           <p>Using Base app wallet</p>
         </div>
       )}
+
+      {/* Mainnet Confirmation Modal */}
+      <MainnetConfirmModal
+        open={showMainnetModal}
+        onOpenChange={setShowMainnetModal}
+        onConfirm={() => {
+          setShowMainnetModal(false)
+          // Retry the transaction after confirmation
+          setTimeout(() => handleSend(), 100)
+        }}
+      />
     </div>
   )
 }

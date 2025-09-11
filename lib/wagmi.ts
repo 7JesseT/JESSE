@@ -1,6 +1,6 @@
 import { http, createConfig } from "wagmi"
-import { baseSepolia } from "wagmi/chains"
 import { metaMask, walletConnect } from "wagmi/connectors"
+import { base, baseSepolia } from "viem/chains"
 
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo"
 
@@ -17,7 +17,7 @@ if (typeof window !== "undefined") {
       // Enable session persistence for WalletConnect
       metadata: {
         name: "Base Daily",
-        description: "Daily onchain interactions on Base Sepolia",
+        description: "Daily onchain interactions on Base",
         url: window.location.origin,
         icons: ["https://avatars.githubusercontent.com/u/37784886"]
       }
@@ -26,10 +26,11 @@ if (typeof window !== "undefined") {
 }
 
 export const config = createConfig({
-  chains: [baseSepolia],
+  chains: [baseSepolia, base],
   connectors,
   transports: {
-    [baseSepolia.id]: http(process.env.NEXT_PUBLIC_RPC_URL),
+    [baseSepolia.id]: http(process.env.NEXT_PUBLIC_RPC_URL_SEPOLIA || "https://sepolia.base.org"),
+    [base.id]: http(process.env.NEXT_PUBLIC_RPC_URL_MAINNET || "https://mainnet.base.org"),
   },
   ssr: false,
 })
