@@ -17,9 +17,10 @@ import {
   Copy, 
   ExternalLink, 
   LogOut,
-  WalletConnect
+  Link
 } from "lucide-react"
 import { formatAddress } from "@/lib/utils"
+import { getCurrentNetworkConfig } from "@/lib/networks"
 
 export function WalletConnection() {
   const { address, isConnected, connector } = useAccount()
@@ -93,7 +94,7 @@ export function WalletConnection() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={handleConnectWalletConnect}>
-              <WalletConnect className="h-4 w-4 mr-2" />
+              <Link className="h-4 w-4 mr-2" />
               WalletConnect
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -136,7 +137,7 @@ export function WalletConnection() {
         
         <DropdownMenuItem asChild>
           <a 
-            href={`https://sepolia.basescan.org/address/${address}`}
+            href={`${getCurrentNetworkConfig().explorerUrl}/address/${address}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center"

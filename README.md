@@ -958,3 +958,193 @@ The mini-app automatically detects in-app browser environments:
 - **Base App**: Checks `navigator.userAgent` for "Base" string
 - **Standalone**: Detects `display-mode: standalone` for PWA-like behavior
 - **Adaptive UX**: Disables external links and optimizes for in-app experience
+
+---
+
+## Production Uploads (S3) - Day 12
+
+### Overview
+Production-ready file storage system using AWS S3 with signed URLs for secure downloads. Files are uploaded to S3 (or S3-compatible storage) and accessed via time-limited signed URLs after payment verification. Includes fallback to local storage for development.
+
+### Features
+- **S3 Integration**: Upload files directly to AWS S3 with private ACL
+- **Signed URLs**: Generate time-limited download URLs (1-24 hours) after payment
+- **Fallback Mode**: Automatic fallback to local storage when S3 is not configured
+- **Security**: Files are private by default, only accessible via presigned URLs
+- **Demo Compatibility**: Demo mode works with or without S3 configuration
+
+### S3 Setup
+
+#### 1. Create S3 Bucket
+1. Go to AWS S3 Console
+2. Create a new bucket (e.g., `base-daily-files`)
+3. Configure bucket settings:
+   - **Region**: Choose your preferred region (e.g., `us-east-1`)
+   - **Block Public Access**: Keep enabled (files are private)
+   - **Versioning**: Optional, enable if needed
+   - **Encryption**: Enable server-side encryption
+
+#### 2. Create IAM User
+1. Go to AWS IAM Console
+2. Create new user: `base-daily-s3-user`
+3. Attach policy with minimal permissions:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:PutObjectAcl",
+                "s3:GetObject"
+            ],
+            "Resource": "arn:aws:s3:::your-bucket-name/*"
+        }
+    ]
+}
+```
+
+4. Generate access keys for the user
+5. **Important**: Store keys securely, never commit to version control
+
+#### 3. Environment Variables
+Add to your `.env.local`:
+
+```env
+# S3 Storage Configuration (Production)
+S3_BUCKET_NAME=your-s3-bucket-name
+S3_REGION=us-east-1
+S3_ACCESS_KEY_ID=your-s3-access-key-id
+S3_SECRET_ACCESS_KEY=your-s3-secret-access-key
+S3_UPLOAD_PREFIX=uploads
+SIGNED_URL_EXPIRY_SECONDS=3600
+
+# Optional: S3 Endpoint for S3-compatible services
+# S3_ENDPOINT=https://nyc3.digitaloceanspaces.com
+```
+
+#### 4. Vercel Deployment
+Add environment variables in Vercel dashboard:
+1. Go to Project Settings → Environment Variables
+2. Add all S3 variables listed above
+3. Deploy your application
+
+### File Upload Flow
+
+#### Admin Upload (`/admin/files`)
+1. Admin uploads PDF file via form
+2. Server validates file (PDF only, max 10MB)
+3. **If S3 configured**: Upload to S3 with deterministic path
+   - Path format: `uploads/YYYY-MM-DD/uuid-filename.pdf`
+4. **If S3 not configured**: Save to local `/public/files/`
+5. Store metadata in `/data/files.json` with `s3Key` field
+
+#### Purchase Flow (`/files`)
+1. User purchases file (onchain or demo mode)
+2. Server verifies payment (if onchain)
+3. **If S3 file**: Generate signed download URL
+4. **If local file**: Return token-based download URL
+5. Client receives download URL with expiry information
+
+### Security Features
+
+#### S3 Security
+- **Private ACL**: All uploaded files are private by default
+- **Signed URLs**: Only accessible via time-limited presigned URLs
+- **IAM Permissions**: Minimal permissions (upload/get only)
+- **No Public Access**: Files cannot be accessed without valid signed URL
+
+#### Token Security
+- **24-hour Expiry**: Download tokens expire after 24 hours
+- **One-time Use**: Tokens are validated on each download request
+- **Purchase Tracking**: All downloads are logged with purchase records
+
+### Testing S3 Integration
+
+#### Local Testing
+1. Set S3 environment variables in `.env.local`
+2. Run `pnpm dev`
+3. Upload file via `/admin/files`
+4. Check S3 console to verify file was uploaded
+5. Purchase file and verify signed URL works
+
+#### Production Testing
+1. Deploy to Vercel with S3 environment variables
+2. Upload file via admin interface
+3. Purchase file and verify download works
+4. Test signed URL expiry (wait 1+ hours)
+
+### Fallback Behavior
+
+#### Development Mode (No S3)
+- Files stored in `/public/files/` directory
+- Access via token-based download endpoint
+- **Note**: Files are ephemeral on Vercel deployments
+
+#### S3 Failure Fallback
+- If S3 upload fails, automatically falls back to local storage
+- Error logged but upload continues
+- Purchase flow adapts to storage method
+
+### Monitoring & Maintenance
+
+#### Signed URL Expiry
+- Default: 1 hour (3600 seconds)
+- Configurable via `SIGNED_URL_EXPIRY_SECONDS`
+- URLs automatically expire and become invalid
+
+#### Revocation
+- Mark purchase as invalid in `/data/purchases.json`
+- Rotate S3 access keys to invalidate all signed URLs
+- Files remain in S3 but become inaccessible
+
+#### Storage Costs
+- Monitor S3 storage usage and costs
+- Consider lifecycle policies for old files
+- Implement cleanup for expired purchases
+
+### File Structure
+```
+lib/
+  storage-s3.ts              # S3 upload and signed URL helpers
+
+app/api/
+  upload/route.ts            # Updated to support S3 uploads
+  purchase/route.ts          # Updated to generate signed URLs
+  download/route.ts          # Updated to handle S3 redirects
+
+data/
+  files.json                 # Extended with s3Key field
+  purchases.json            # Purchase records with download URLs
+```
+
+### Troubleshooting
+
+#### S3 Upload Fails
+- Check AWS credentials and permissions
+- Verify bucket name and region
+- Check network connectivity
+- Review AWS CloudTrail logs
+
+#### Signed URL Issues
+- Verify S3 credentials have `GetObject` permission
+- Check URL expiry time
+- Ensure bucket and key exist
+- Test with AWS CLI: `aws s3 presign s3://bucket/key`
+
+#### Fallback Not Working
+- Check file exists in `/public/files/`
+- Verify token is valid and not expired
+- Check server logs for errors
+
+### Production Checklist
+- [ ] S3 bucket created with private ACL
+- [ ] IAM user with minimal permissions
+- [ ] Environment variables set in Vercel
+- [ ] File upload works to S3
+- [ ] Signed URLs generate correctly
+- [ ] Download URLs expire as expected
+- [ ] Fallback works when S3 is disabled
+- [ ] Demo mode works with S3 enabled

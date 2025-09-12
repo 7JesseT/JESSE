@@ -10,6 +10,7 @@ export interface FileMetadata {
   priceToken: string;
   recipient: string;
   uploadedAt: string;
+  s3Key?: string; // S3 object key for production storage
 }
 
 export interface FilesData {

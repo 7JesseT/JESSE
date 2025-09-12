@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle, Download, ExternalLink, Loader2 } from 'lucide-react';
+import { CheckCircle, Download, ExternalLink, Loader2, AlertTriangle } from 'lucide-react';
+import { getCurrentNetworkConfig } from '@/lib/networks';
 
 interface FileMetadata {
   id: string;
@@ -18,6 +19,7 @@ interface FileMetadata {
   priceToken: string;
   recipient: string;
   uploadedAt: string;
+  s3Key?: string;
 }
 
 interface Purchase {
@@ -53,6 +55,8 @@ export default function FilesPage() {
   const [purchasingFile, setPurchasingFile] = useState<string | null>(null);
   const [purchaseStatus, setPurchaseStatus] = useState<Record<string, string>>({});
   const [successTx, setSuccessTx] = useState<Record<string, string>>({});
+  const [downloadUrls, setDownloadUrls] = useState<Record<string, string>>({});
+  const [currentNetwork, setCurrentNetwork] = useState(getCurrentNetworkConfig());
 
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -123,6 +127,12 @@ export default function FilesPage() {
       if (result.success) {
         setPurchaseStatus(prev => ({ ...prev, [purchasingFile]: 'completed' }));
         setSuccessTx(prev => ({ ...prev, [purchasingFile]: txHash }));
+        
+        // Store the download URL if provided
+        if (result.downloadUrl) {
+          setDownloadUrls(prev => ({ ...prev, [purchasingFile]: result.downloadUrl }));
+        }
+        
         await fetchPurchases(); // Refresh purchases
       } else {
         setPurchaseStatus(prev => ({ ...prev, [purchasingFile]: 'failed' }));
@@ -182,6 +192,12 @@ export default function FilesPage() {
 
       if (result.success) {
         setPurchaseStatus(prev => ({ ...prev, [file.id]: 'completed' }));
+        
+        // Store the download URL if provided
+        if (result.downloadUrl) {
+          setDownloadUrls(prev => ({ ...prev, [file.id]: result.downloadUrl }));
+        }
+        
         await fetchPurchases(); // Refresh purchases
       } else {
         setPurchaseStatus(prev => ({ ...prev, [file.id]: 'failed' }));
@@ -239,6 +255,16 @@ export default function FilesPage() {
         </Alert>
       )}
 
+      {!currentNetwork.isTestnet && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>⚠️ REAL FUNDS WARNING:</strong> You are on Base Mainnet. Any payments will use real USDC. 
+            Switch to Base Sepolia testnet for safe testing.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {files.map((file) => {
           const isPurchased = isFilePurchased(file.id);
@@ -273,7 +299,9 @@ export default function FilesPage() {
                     <Button
                       className="w-full"
                       onClick={() => {
-                        window.open(`/api/download?token=${downloadToken}`, '_blank');
+                        // Use stored download URL if available, otherwise use token-based download
+                        const downloadUrl = downloadUrls[file.id] || `/api/download?token=${downloadToken}`;
+                        window.open(downloadUrl, '_blank');
                       }}
                     >
                       <Download className="h-4 w-4 mr-2" />

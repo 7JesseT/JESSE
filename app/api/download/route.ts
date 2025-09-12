@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { isTokenValid } from '@/lib/purchases';
 import { getFileById } from '@/lib/files';
+import { getSignedDownloadUrl, isS3Configured } from '@/lib/storage-s3';
 
 export async function GET(request: NextRequest) {
   try {
@@ -44,7 +45,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Stream the file
+    // If file is stored in S3, redirect to signed URL
+    if (file.s3Key && isS3Configured()) {
+      try {
+        const signedUrl = await getSignedDownloadUrl(file.s3Key);
+        return NextResponse.redirect(signedUrl);
+      } catch (s3Error) {
+        console.error('Failed to generate S3 signed URL:', s3Error);
+        // Fall through to local file handling
+      }
+    }
+
+    // Handle local file storage
     const filePath = path.join(process.cwd(), 'public', 'files', file.filename);
     
     try {

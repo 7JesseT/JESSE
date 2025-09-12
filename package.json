@@ -10,6 +10,8 @@
     "health:curl": "node -e \"console.log('curl http://localhost:3000/health');\""
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.887.0",
+    "@aws-sdk/s3-request-presigner": "^3.887.0",
     "@coinbase/onchainkit": "latest",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "1.2.2",

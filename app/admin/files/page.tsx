@@ -10,9 +10,19 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, CheckCircle, Loader2 } from 'lucide-react';
 
 export default function AdminFilesPage() {
-  // Simple admin protection - in production, implement proper authentication
+  // All hooks must be declared at the top level - no conditional hooks
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminKey, setAdminKey] = useState('');
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    priceUsd: '1',
+    recipient: process.env.NEXT_PUBLIC_PAYWALL_RECIPIENT || '',
+  });
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     // Check if admin key is stored in localStorage
@@ -30,53 +40,6 @@ export default function AdminFilesPage() {
       alert('Invalid admin key');
     }
   };
-
-  if (!isAdmin) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-md mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle>Admin Access</CardTitle>
-              <CardDescription>
-                Enter admin key to access file upload functionality
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="adminKey">Admin Key</Label>
-                <Input
-                  id="adminKey"
-                  type="password"
-                  value={adminKey}
-                  onChange={(e) => setAdminKey(e.target.value)}
-                  placeholder="Enter admin key"
-                  className="mt-1"
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                  Demo key: <code className="bg-muted px-1 rounded">base-daily-admin-2024</code>
-                </p>
-              </div>
-              <Button onClick={handleAdminLogin} className="w-full">
-                Access Admin Panel
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    priceUsd: '1',
-    recipient: process.env.NEXT_PUBLIC_PAYWALL_RECIPIENT || '',
-  });
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [error, setError] = useState('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -141,6 +104,12 @@ export default function AdminFilesPage() {
         // Reset file input
         const fileInput = document.getElementById('file') as HTMLInputElement;
         if (fileInput) fileInput.value = '';
+        
+        // Log storage method for debugging
+        console.log(`File uploaded successfully using ${result.storageMethod} storage`);
+        if (result.s3Key) {
+          console.log(`S3 Key: ${result.s3Key}`);
+        }
       } else {
         setError(result.error || 'Upload failed');
       }
@@ -151,6 +120,43 @@ export default function AdminFilesPage() {
       setUploading(false);
     }
   };
+
+  // Early return after all hooks are declared
+  if (!isAdmin) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-md mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle>Admin Access</CardTitle>
+              <CardDescription>
+                Enter admin key to access file upload functionality
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="adminKey">Admin Key</Label>
+                <Input
+                  id="adminKey"
+                  type="password"
+                  value={adminKey}
+                  onChange={(e) => setAdminKey(e.target.value)}
+                  placeholder="Enter admin key"
+                  className="mt-1"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Demo key: <code className="bg-muted px-1 rounded">base-daily-admin-2024</code>
+                </p>
+              </div>
+              <Button onClick={handleAdminLogin} className="w-full">
+                Access Admin Panel
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -176,8 +182,8 @@ export default function AdminFilesPage() {
 
       <Alert className="mb-6">
         <AlertDescription>
-          <strong>Note:</strong> File uploads to /public are ephemeral on Vercel. 
-          For production, consider using AWS S3 or similar cloud storage.
+          <strong>Production Storage:</strong> Files are now uploaded to S3 (if configured) with signed URLs for secure downloads. 
+          If S3 is not configured, files fall back to local storage for development.
         </AlertDescription>
       </Alert>
 

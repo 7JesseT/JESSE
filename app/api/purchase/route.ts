@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { addPurchase, Purchase } from '@/lib/purchases';
 import { getFileById } from '@/lib/files';
+import { getSignedDownloadUrl, isS3Configured } from '@/lib/storage-s3';
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,10 +77,33 @@ export async function POST(request: NextRequest) {
 
     await addPurchase(purchase);
 
+    // Generate download URL based on storage method
+    let downloadUrl: string;
+    let downloadMethod: string;
+
+    if (file.s3Key && isS3Configured()) {
+      try {
+        // Generate signed URL for S3
+        downloadUrl = await getSignedDownloadUrl(file.s3Key);
+        downloadMethod = 's3-signed';
+      } catch (s3Error) {
+        console.error('Failed to generate S3 signed URL:', s3Error);
+        // Fallback to local file URL
+        downloadUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/download?token=${token}`;
+        downloadMethod = 'local-fallback';
+      }
+    } else {
+      // Use local file download endpoint
+      downloadUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/download?token=${token}`;
+      downloadMethod = 'local';
+    }
+
     return NextResponse.json({
       success: true,
       token,
       expiry: expiry.toISOString(),
+      downloadUrl,
+      downloadMethod,
       details: verifyResult.details,
     });
   } catch (error) {
