@@ -48,20 +48,13 @@ export default function AdminDashboard() {
   // Check authorization
   useEffect(() => {
     const checkAuth = () => {
-      const adminKey = process.env.NEXT_PUBLIC_ADMIN_KEY;
-      if (!adminKey) {
-        setIsAuthorized(false);
-        setIsLoading(false);
-        return;
-      }
-
-      const urlKey = searchParams?.get('adminKey');
+      const urlKey = searchParams?.get('admin');
       const storedKey = localStorage.getItem('adminKey');
       
-      if (urlKey === adminKey || storedKey === adminKey) {
+      if (urlKey === 'base-daily-admin-2024' || storedKey === 'base-daily-admin-2024') {
         setIsAuthorized(true);
-        if (urlKey === adminKey) {
-          localStorage.setItem('adminKey', adminKey);
+        if (urlKey === 'base-daily-admin-2024') {
+          localStorage.setItem('adminKey', 'base-daily-admin-2024');
         }
       } else {
         setIsAuthorized(false);

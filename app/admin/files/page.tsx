@@ -26,7 +26,7 @@ export default function AdminFilesPage() {
 
   useEffect(() => {
     // Check if admin key is stored in localStorage
-    const storedKey = localStorage.getItem('admin-key');
+    const storedKey = localStorage.getItem('adminKey');
     if (storedKey === 'base-daily-admin-2024') {
       setIsAdmin(true);
     }
@@ -34,7 +34,7 @@ export default function AdminFilesPage() {
 
   const handleAdminLogin = () => {
     if (adminKey === 'base-daily-admin-2024') {
-      localStorage.setItem('admin-key', adminKey);
+      localStorage.setItem('adminKey', adminKey);
       setIsAdmin(true);
     } else {
       alert('Invalid admin key');
@@ -171,7 +171,7 @@ export default function AdminFilesPage() {
           <Button 
             variant="outline" 
             onClick={() => {
-              localStorage.removeItem('admin-key');
+              localStorage.removeItem('adminKey');
               setIsAdmin(false);
             }}
           >

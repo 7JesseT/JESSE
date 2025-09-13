@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import axios from "axios";
-import { parseUnits } from "viem";
+import { useSearchParams } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Shield } from "lucide-react";
 
 interface Mint {
   wallet: string;
@@ -16,15 +17,40 @@ interface Mint {
 }
 
 export default function AdminAttendancePage() {
+  const searchParams = useSearchParams();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [mints, setMints] = useState<Mint[]>([]);
   const [search, setSearch] = useState("");
 
+  // Check authorization
   useEffect(() => {
+    const checkAuth = () => {
+      const urlKey = searchParams?.get('admin');
+      const storedKey = localStorage.getItem('adminKey');
+      
+      if (urlKey === 'base-daily-admin-2024' || storedKey === 'base-daily-admin-2024') {
+        setIsAuthorized(true);
+        if (urlKey === 'base-daily-admin-2024') {
+          localStorage.setItem('adminKey', 'base-daily-admin-2024');
+        }
+      } else {
+        setIsAuthorized(false);
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!isAuthorized) return;
+    
     fetch("/data/mints.json")
       .then((res) => res.json())
       .then(setMints)
       .catch((err) => console.error("Error fetching mints:", err));
-  }, []);
+  }, [isAuthorized]);
 
   const filtered = mints.filter(
     (m) =>
@@ -49,8 +75,51 @@ export default function AdminAttendancePage() {
     URL.revokeObjectURL(url);
   };
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-lg">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Alert className="max-w-md mx-auto">
+          <Shield className="h-4 w-4" />
+          <AlertDescription>
+            Not authorized. Please provide a valid admin key via URL parameter or localStorage.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-4">
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Admin - Attendance</h1>
+            <p className="text-muted-foreground">
+              View event attendance and mint records
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              localStorage.removeItem('adminKey');
+              setIsAuthorized(false);
+            }}
+          >
+            Logout
+          </Button>
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Attendance Mints (Admin)</CardTitle>

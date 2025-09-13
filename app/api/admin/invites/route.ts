@@ -4,15 +4,10 @@ import { getAllInvites, exportInvitesToCsv } from '@/lib/invites'
 export async function GET(request: NextRequest) {
   try {
     // Check admin authentication
-    const adminKey = process.env.NEXT_PUBLIC_ADMIN_KEY
-    if (!adminKey) {
-      return NextResponse.json({ error: 'Admin key not configured' }, { status: 500 })
-    }
-
     const url = new URL(request.url)
     const providedKey = url.searchParams.get('adminKey')
     
-    if (providedKey !== adminKey) {
+    if (providedKey !== 'base-daily-admin-2024') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -27,15 +22,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check admin authentication
-    const adminKey = process.env.NEXT_PUBLIC_ADMIN_KEY
-    if (!adminKey) {
-      return NextResponse.json({ error: 'Admin key not configured' }, { status: 500 })
-    }
-
     const url = new URL(request.url)
     const providedKey = url.searchParams.get('adminKey')
     
-    if (providedKey !== adminKey) {
+    if (providedKey !== 'base-daily-admin-2024') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

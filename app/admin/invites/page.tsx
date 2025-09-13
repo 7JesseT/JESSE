@@ -39,34 +39,26 @@ export default function AdminInvitesPage() {
   // Check authorization
   useEffect(() => {
     const checkAuth = () => {
-      const adminKey = process.env.NEXT_PUBLIC_ADMIN_KEY
-      if (!adminKey) {
-        setIsAuthorized(false)
-        setIsLoading(false)
-        return
-      }
-
-      const urlKey = searchParams?.get('adminKey')
-      const storedKey = localStorage.getItem('adminKey')
+      const urlKey = searchParams?.get('admin');
+      const storedKey = localStorage.getItem('adminKey');
       
-      if (urlKey === adminKey || storedKey === adminKey) {
-        setIsAuthorized(true)
-        if (urlKey === adminKey) {
-          localStorage.setItem('adminKey', adminKey)
+      if (urlKey === 'base-daily-admin-2024' || storedKey === 'base-daily-admin-2024') {
+        setIsAuthorized(true);
+        if (urlKey === 'base-daily-admin-2024') {
+          localStorage.setItem('adminKey', 'base-daily-admin-2024');
         }
       } else {
-        setIsAuthorized(false)
+        setIsAuthorized(false);
       }
-      setIsLoading(false)
-    }
+      setIsLoading(false);
+    };
 
-    checkAuth()
-  }, [searchParams])
+    checkAuth();
+  }, [searchParams]);
 
   const fetchInvites = async () => {
     try {
-      const adminKey = process.env.NEXT_PUBLIC_ADMIN_KEY
-      const response = await fetch(`/api/admin/invites?adminKey=${adminKey}`)
+      const response = await fetch(`/api/admin/invites?adminKey=base-daily-admin-2024`)
       const data = await response.json()
 
       if (!response.ok) {
@@ -120,8 +112,7 @@ export default function AdminInvitesPage() {
   const handleExport = async () => {
     setIsExporting(true)
     try {
-      const adminKey = process.env.NEXT_PUBLIC_ADMIN_KEY
-      const response = await fetch('/api/admin/invites', {
+      const response = await fetch('/api/admin/invites?adminKey=base-daily-admin-2024', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
