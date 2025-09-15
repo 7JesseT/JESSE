@@ -1,0 +1,10 @@
+[33md903736ac[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m day 13 updates - admin dashboard fixes and upload flow
+[33m42d2176f0[m day12
+[33mfbb675e21[m feat: <short summary of what you changed>
+[33m8450a3c3e[m feat(wallet): switch to MetaMask as default, fallback to WalletConnect
+[33m5b2926213[m feat(invites): one-time invite links, admin UI, invite lifecycle
+[33mcd9c46ab5[m feat(admin): add Day 7 admin dashboard with key auth
+[33m81b9ea5a2[m feat(paywall): pay-per-file upload, wallet/demo mode, instant download, expiring tokens
+[33m7bf0a661e[m feat(merge): integrate pay-per-file feature into main page alongside TipJar
+[33m239a0900f[m feat(paywall): pay-per-file upload, onchain purchase, signed download token, purchases JSON
+[33m0a87ad2d3[m Day 3: Added USDC, presets, recipient selection, shipments tracking
