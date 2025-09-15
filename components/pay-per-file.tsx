@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle, Download, ExternalLink, Loader2, FileText } from 'lucide-react';
+import { CheckCircle, Download, ExternalLink, Loader2, FileText, Lock } from 'lucide-react';
 
 interface FileMetadata {
   id: string;
@@ -18,6 +18,7 @@ interface FileMetadata {
   priceToken: string;
   recipient: string;
   uploadedAt: string;
+  isFree?: boolean; // New field
 }
 
 interface Purchase {
@@ -194,6 +195,40 @@ export function PayPerFile() {
     }
   };
 
+  const handleFreeDownload = async (file: FileMetadata) => {
+    setPurchasingFile(file.id);
+    setPurchaseStatus(prev => ({ ...prev, [file.id]: 'downloading' }));
+
+    try {
+      const response = await fetch('/api/purchase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileId: file.id,
+          demoMode: true, // Free files use demo mode for token generation
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setPurchaseStatus(prev => ({ ...prev, [file.id]: 'completed' }));
+        // Direct download for free files
+        window.open(`/api/download?token=${result.token}`, '_blank');
+        await fetchPurchases(); // Refresh purchases
+      } else {
+        setPurchaseStatus(prev => ({ ...prev, [file.id]: 'failed' }));
+      }
+    } catch (error) {
+      console.error('Free download error:', error);
+      setPurchaseStatus(prev => ({ ...prev, [file.id]: 'failed' }));
+    } finally {
+      setPurchasingFile(null);
+    }
+  };
+
   const getPurchaseStatus = (fileId: string) => {
     return purchaseStatus[fileId] || 'idle';
   };
@@ -264,24 +299,32 @@ export function PayPerFile() {
               const downloadToken = getDownloadToken(file.id);
               const status = getPurchaseStatus(file.id);
               const txHash = successTx[file.id];
+              const isFree = file.isFree || false;
 
               return (
                 <div key={file.id} className="border rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium">{file.title}</h3>
-                    {isPurchased && (
-                      <Badge variant="secondary" className="bg-green-100 text-green-800">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Purchased
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {isFree && (
+                        <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          Free
+                        </Badge>
+                      )}
+                      {isPurchased && (
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Purchased
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   
                   <p className="text-sm text-muted-foreground">{file.description}</p>
                   
                   <div className="flex items-center justify-between">
                     <Badge variant="outline">
-                      {file.priceUsd} {file.priceToken}
+                      {isFree ? 'Free' : `${file.priceUsd} ${file.priceToken}`}
                     </Badge>
                     
                     {isPurchased && downloadToken ? (
@@ -296,61 +339,49 @@ export function PayPerFile() {
                       </Button>
                     ) : (
                       <div className="space-y-1">
-                        {isConnected ? (
+                        {isFree ? (
+                          // Free file - direct download
                           <Button
                             size="sm"
-                            onClick={() => handleBuyFile(file)}
+                            onClick={() => handleFreeDownload(file)}
                             disabled={status !== 'idle'}
                           >
-                            {status === 'preparing' && (
+                            {status === 'downloading' && (
                               <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Preparing...
-                              </>
-                            )}
-                            {status === 'pending' && (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Pending...
-                              </>
-                            )}
-                            {status === 'verifying' && (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Verifying...
+                                Downloading...
                               </>
                             )}
                             {status === 'completed' && (
                               <>
                                 <CheckCircle className="h-4 w-4 mr-2" />
-                                Complete!
+                                Downloaded!
                               </>
                             )}
                             {status === 'failed' && 'Failed'}
-                            {status === 'idle' && 'Buy with USDC'}
+                            {status === 'idle' && (
+                              <>
+                                <Download className="h-4 w-4 mr-2" />
+                                Download Free
+                              </>
+                            )}
                           </Button>
                         ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDemoUnlock(file)}
-                            disabled={status !== 'idle'}
-                          >
-                            {status === 'unlocking' && (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Unlocking...
-                              </>
-                            )}
-                            {status === 'completed' && (
-                              <>
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Unlocked!
-                              </>
-                            )}
-                            {status === 'failed' && 'Failed'}
-                            {status === 'idle' && 'Unlock (Demo)'}
-                          </Button>
+                          // Paid file - show coming soon message
+                          <div className="space-y-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled
+                              className="opacity-50"
+                            >
+                              <Lock className="h-4 w-4 mr-2" />
+                              Coming Soon: Paystack/Flutterwave
+                            </Button>
+                            <p className="text-xs text-muted-foreground text-center">
+                              Payment integration coming soon
+                            </p>
+                          </div>
                         )}
                       </div>
                     )}

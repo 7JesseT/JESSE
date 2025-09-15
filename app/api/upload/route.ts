@@ -14,10 +14,19 @@ export async function POST(request: NextRequest) {
     const description = formData.get('description') as string;
     const priceUsd = parseFloat(formData.get('priceUsd') as string);
     const recipient = formData.get('recipient') as string;
+    const isFree = formData.get('isFree') === 'true';
 
-    if (!file || !title || !description || isNaN(priceUsd) || !recipient) {
+    if (!file || !title || !description || isNaN(priceUsd)) {
       return NextResponse.json(
         { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    // For paid files, require recipient
+    if (!isFree && !recipient) {
+      return NextResponse.json(
+        { error: 'Recipient address is required for paid files' },
         { status: 400 }
       );
     }
@@ -75,9 +84,10 @@ export async function POST(request: NextRequest) {
       description,
       priceUsd,
       priceToken: 'USDC',
-      recipient,
+      recipient: recipient || '', // Empty string for free files
       uploadedAt: new Date().toISOString(),
       s3Key, // Will be undefined for local storage
+      isFree, // Add the isFree field
     };
 
     // Save metadata

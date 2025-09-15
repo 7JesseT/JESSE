@@ -11,6 +11,7 @@ export interface FileMetadata {
   recipient: string;
   uploadedAt: string;
   s3Key?: string; // S3 object key for production storage
+  isFree?: boolean; // New field for free/paid toggle
 }
 
 export interface FilesData {

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, CheckCircle, Loader2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 export default function AdminFilesPage() {
   // All hooks must be declared at the top level - no conditional hooks
@@ -18,6 +19,7 @@ export default function AdminFilesPage() {
     description: '',
     priceUsd: '1',
     recipient: process.env.NEXT_PUBLIC_PAYWALL_RECIPIENT || '',
+    isFree: false, // New field for free/paid toggle
   });
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -61,6 +63,15 @@ export default function AdminFilesPage() {
     }));
   };
 
+  const handleFreeToggle = (checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      isFree: checked,
+      // If making free, set price to 0
+      priceUsd: checked ? '0' : prev.priceUsd,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -69,8 +80,14 @@ export default function AdminFilesPage() {
       return;
     }
 
-    if (!formData.title || !formData.description || !formData.recipient) {
+    if (!formData.title || !formData.description) {
       setError('Please fill in all required fields');
+      return;
+    }
+
+    // If not free, require recipient
+    if (!formData.isFree && !formData.recipient) {
+      setError('Recipient address is required for paid files');
       return;
     }
 
@@ -84,6 +101,7 @@ export default function AdminFilesPage() {
       uploadFormData.append('description', formData.description);
       uploadFormData.append('priceUsd', formData.priceUsd);
       uploadFormData.append('recipient', formData.recipient);
+      uploadFormData.append('isFree', formData.isFree.toString());
 
       const response = await fetch('/api/upload', {
         method: 'POST',
@@ -99,6 +117,7 @@ export default function AdminFilesPage() {
           description: '',
           priceUsd: '1',
           recipient: process.env.NEXT_PUBLIC_PAYWALL_RECIPIENT || '',
+          isFree: false,
         });
         setFile(null);
         // Reset file input
@@ -165,7 +184,7 @@ export default function AdminFilesPage() {
           <div>
             <h1 className="text-3xl font-bold mb-2">Admin - Upload Files</h1>
             <p className="text-muted-foreground">
-              Upload PDF files for pay-per-download functionality
+              Upload PDF files with free/paid toggle functionality
             </p>
           </div>
           <Button 
@@ -182,8 +201,8 @@ export default function AdminFilesPage() {
 
       <Alert className="mb-6">
         <AlertDescription>
-          <strong>Production Storage:</strong> Files are now uploaded to S3 (if configured) with signed URLs for secure downloads. 
-          If S3 is not configured, files fall back to local storage for development.
+          <strong>Simplified Paywall:</strong> Files can be marked as free (direct download) or paid (coming soon: Paystack/Flutterwave). 
+          No Stripe integration required.
         </AlertDescription>
       </Alert>
 
@@ -238,35 +257,57 @@ export default function AdminFilesPage() {
                 />
               </div>
 
-              <div>
-                <Label htmlFor="priceUsd">Price (USDC) *</Label>
-                <Input
-                  id="priceUsd"
-                  name="priceUsd"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.priceUsd}
-                  onChange={handleInputChange}
-                  placeholder="1.00"
-                  className="mt-1"
+              {/* Free/Paid Toggle */}
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isFree"
+                  checked={formData.isFree}
+                  onCheckedChange={handleFreeToggle}
                 />
+                <Label htmlFor="isFree">Free File (no payment required)</Label>
               </div>
 
-              <div>
-                <Label htmlFor="recipient">Recipient Address *</Label>
-                <Input
-                  id="recipient"
-                  name="recipient"
-                  value={formData.recipient}
-                  onChange={handleInputChange}
-                  placeholder="0x..."
-                  className="mt-1 font-mono"
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                  Address where payments will be sent
-                </p>
-              </div>
+              {!formData.isFree && (
+                <>
+                  <div>
+                    <Label htmlFor="priceUsd">Price (USDC) *</Label>
+                    <Input
+                      id="priceUsd"
+                      name="priceUsd"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.priceUsd}
+                      onChange={handleInputChange}
+                      placeholder="1.00"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="recipient">Recipient Address *</Label>
+                    <Input
+                      id="recipient"
+                      name="recipient"
+                      value={formData.recipient}
+                      onChange={handleInputChange}
+                      placeholder="0x..."
+                      className="mt-1 font-mono"
+                    />
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Address where payments will be sent (Paystack/Flutterwave integration coming soon)
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {formData.isFree && (
+                <Alert className="bg-blue-50 border-blue-200">
+                  <AlertDescription className="text-blue-800">
+                    <strong>Free File:</strong> This file will be available for direct download without payment.
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {error && (
                 <Alert variant="destructive">
