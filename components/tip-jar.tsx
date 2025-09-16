@@ -16,6 +16,7 @@ import { saveTipTransaction, getRecipientTotals, getAllTotals, type TipTransacti
 import { NetworkToggle } from "@/components/network-toggle"
 import { MainnetConfirmModal } from "@/components/mainnet-confirm-modal"
 import { getCurrentNetworkConfig, isMainnetConfirmed, NetworkType } from "@/lib/networks"
+import { toast } from "sonner"
 
 type StoredTx = {
   txHash: string
@@ -181,6 +182,43 @@ export function TipJar() {
         }
         saveTipTransaction(tipTransaction)
         setTotals(getAllTotals())
+      }
+
+      // Random reward logic - 10% chance to mint special NFT
+      const randomChance = Math.random()
+      const rewardThreshold = 0.1 // 10% chance
+      
+      console.log(`TipJar Payment Success - Wallet: ${address}, Amount: ${numericAmount} ${currency}, TX: ${hash}`)
+      
+      if (randomChance < rewardThreshold && address) {
+        console.log(`Random Reward Triggered - Wallet: ${address}, Chance: ${randomChance.toFixed(3)}`)
+        
+        try {
+          const response = await fetch('/api/mint-special', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              to: address,
+              tokenId: 2, // Special NFT token ID
+              amount: 1
+            }),
+          })
+
+          const result = await response.json()
+
+          if (response.ok && result.success) {
+            console.log(`Random Reward Success - Wallet: ${address}, Special NFT TX: ${result.txHash}`)
+            toast.success("Congrats! You received a Special NFT 🎁")
+          } else {
+            console.error(`Random Reward Failed - Wallet: ${address}, Error: ${result.error}`)
+          }
+        } catch (error) {
+          console.error(`Random Reward Error - Wallet: ${address}, Error:`, error)
+        }
+      } else {
+        console.log(`No Random Reward - Wallet: ${address}, Chance: ${randomChance.toFixed(3)}`)
       }
 
       // If this was from an invite, mark the invite as used
