@@ -14,6 +14,9 @@ import { toast } from "sonner"
 // VIP Pass NFT ID - this should match what's configured in your contract
 const VIP_PASS_ID = 1
 
+// Allow VIP access without wallet connection (useful for Vercel deployment issues)
+const ALLOW_VIP_WITHOUT_WALLET = process.env.NEXT_PUBLIC_ALLOW_VIP_WITHOUT_WALLET === "true"
+
 export default function VipPage() {
   const [isCheckingOwnership, setIsCheckingOwnership] = useState(true)
   const [isMinting, setIsMinting] = useState(false)
@@ -30,10 +33,19 @@ export default function VipPage() {
     functionName: "balanceOf",
     args: address ? [address, BigInt(VIP_PASS_ID)] : undefined,
     chainId: networkConfig.chain.id,
-    enabled: !!address && !!CONTRACTS.ATTENDANCE,
+    enabled: !!address && !!CONTRACTS.ATTENDANCE && !ALLOW_VIP_WITHOUT_WALLET,
   })
 
   useEffect(() => {
+    // If bypass is enabled, grant VIP access immediately
+    if (ALLOW_VIP_WITHOUT_WALLET) {
+      setOwnsVipPass(true)
+      setBalance(1) // Simulate having 1 VIP pass
+      setIsCheckingOwnership(false)
+      console.log("VIP access granted via bypass mode (no wallet required)")
+      return
+    }
+
     if (vipBalance !== undefined) {
       const balanceNumber = Number(vipBalance)
       setBalance(balanceNumber)
@@ -88,7 +100,8 @@ export default function VipPage() {
     }
   }
 
-  if (!isConnected) {
+  // Only require wallet connection if bypass is not enabled
+  if (!isConnected && !ALLOW_VIP_WITHOUT_WALLET) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-2xl mx-auto">
@@ -150,7 +163,9 @@ export default function VipPage() {
           </CardTitle>
           <CardDescription>
             {ownsVipPass 
-              ? "Welcome to the exclusive VIP area!" 
+              ? ALLOW_VIP_WITHOUT_WALLET 
+                ? "Welcome to the exclusive VIP area! (Bypass mode active)" 
+                : "Welcome to the exclusive VIP area!"
               : "Get VIP access by minting a VIP Pass NFT"
             }
           </CardDescription>
@@ -161,7 +176,10 @@ export default function VipPage() {
               <div className="text-6xl">🎉</div>
               <h2 className="text-2xl font-bold text-primary">Secret VIP Content</h2>
               <p className="text-muted-foreground">
-                Congratulations! You own {balance} VIP Pass{balance > 1 ? 'es' : ''} and have access to exclusive content.
+                {ALLOW_VIP_WITHOUT_WALLET 
+                  ? "VIP access granted via bypass mode - enjoy exclusive content!"
+                  : `Congratulations! You own ${balance} VIP Pass${balance > 1 ? 'es' : ''} and have access to exclusive content.`
+                }
               </p>
               <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950 dark:to-orange-950 p-6 rounded-lg border border-yellow-200 dark:border-yellow-800">
                 <h3 className="text-lg font-semibold mb-2">🎁 VIP Benefits</h3>
@@ -203,9 +221,19 @@ export default function VipPage() {
           )}
           
           <div className="text-xs text-muted-foreground text-center">
-            Wallet: {address?.slice(0, 6)}...{address?.slice(-4)} | 
-            Network: {networkConfig.name} | 
-            Contract: {CONTRACTS.ATTENDANCE?.slice(0, 6)}...{CONTRACTS.ATTENDANCE?.slice(-4)}
+            {ALLOW_VIP_WITHOUT_WALLET ? (
+              <>
+                Bypass Mode Active | 
+                Network: {networkConfig.name} | 
+                Contract: {CONTRACTS.ATTENDANCE?.slice(0, 6)}...{CONTRACTS.ATTENDANCE?.slice(-4)}
+              </>
+            ) : (
+              <>
+                Wallet: {address?.slice(0, 6)}...{address?.slice(-4)} | 
+                Network: {networkConfig.name} | 
+                Contract: {CONTRACTS.ATTENDANCE?.slice(0, 6)}...{CONTRACTS.ATTENDANCE?.slice(-4)}
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
