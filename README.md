@@ -1148,3 +1148,5 @@ data/
 - [ ] Download URLs expire as expected
 - [ ] Fallback works when S3 is disabled
 - [ ] Demo mode works with S3 enabled
+#   V I P   B y p a s s   M o d e   E n a b l e d  
+ 
