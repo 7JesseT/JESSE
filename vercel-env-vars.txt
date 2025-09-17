@@ -1,0 +1,29 @@
+# Base Daily Environment Variables - Production Ready
+# These are your actual values for Vercel deployment
+
+# WalletConnect Project ID ✅
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=66603580dce8a2318827a29362e173a1
+
+# RPC URLs ✅
+NEXT_PUBLIC_RPC_URL=https://sepolia.base.org
+NEXT_PUBLIC_RPC_URL_SEPOLIA=https://sepolia.base.org
+NEXT_PUBLIC_RPC_URL_MAINNET=https://mainnet.base.org
+
+# Base URL - UPDATE THIS FOR VERCEL ✅
+NEXT_PUBLIC_BASE_URL=https://your-app-name.vercel.app
+
+# Contract Addresses ✅
+NEXT_PUBLIC_ATTENDANCE_CONTRACT=0x036CbD53842c5426634e7929541eC2318f3dCF7e
+NEXT_PUBLIC_USDC_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
+
+# Feature Flags ✅
+NEXT_PUBLIC_ALLOW_VIP_WITHOUT_WALLET=true
+
+# Pricing ✅
+NEXT_PUBLIC_PAYWALL_PRICE=0.001
+
+# Optional: OnchainKit API Key (for enhanced features)
+NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_onchainkit_api_key_here
+
+# Server-side (keep secure!)
+MINTER_PRIVATE_KEY=your_minter_private_key_here
