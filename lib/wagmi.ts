@@ -4,9 +4,24 @@ import { base, baseSepolia } from "viem/chains"
 
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo"
 
+// Get the base URL dynamically for WalletConnect metadata
+const getBaseUrl = () => {
+  if (typeof window !== "undefined") {
+    return window.location.origin
+  }
+  return process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+}
+
 // Prioritize MetaMask as the primary wallet option
 const connectors = [
-  metaMask(),
+  metaMask({
+    // Add dapp metadata for better UX
+    dappMetadata: {
+      name: "Base Daily",
+      url: getBaseUrl(),
+      iconUrl: `${getBaseUrl()}/placeholder-logo.svg`,
+    },
+  }),
 ]
 
 // Add WalletConnect as fallback option on client side to avoid SSR issues
@@ -18,9 +33,11 @@ if (typeof window !== "undefined") {
       metadata: {
         name: "Base Daily",
         description: "Daily onchain interactions on Base",
-        url: window.location.origin,
-        icons: ["https://avatars.githubusercontent.com/u/37784886"]
-      }
+        url: getBaseUrl(),
+        icons: [`${getBaseUrl()}/placeholder-logo.svg`]
+      },
+      // Add better mobile support
+      showQrModal: true,
     })
   )
 }
@@ -33,6 +50,8 @@ export const config = createConfig({
     [base.id]: http(process.env.NEXT_PUBLIC_RPC_URL_MAINNET || "https://mainnet.base.org"),
   },
   ssr: false,
+  // Add better error handling
+  multiInjectedProviderDiscovery: false,
 })
 
 declare module "wagmi" {

@@ -17,43 +17,68 @@ import {
   Copy, 
   ExternalLink, 
   LogOut,
-  Link
+  Link,
+  AlertCircle
 } from "lucide-react"
 import { formatAddress } from "@/lib/utils"
 import { getCurrentNetworkConfig } from "@/lib/networks"
 
 export function WalletConnection() {
   const { address, isConnected, connector } = useAccount()
-  const { connect, connectors } = useConnect()
+  const { connect, connectors, error: connectError } = useConnect()
   const { disconnect } = useDisconnect()
   const [isMetaMaskInstalled, setIsMetaMaskInstalled] = useState(false)
+  const [connectionError, setConnectionError] = useState<string>("")
 
-  // Check if MetaMask is installed
+  // Check if MetaMask is installed and handle connection errors
   useEffect(() => {
     if (typeof window !== "undefined") {
       setIsMetaMaskInstalled(!!window.ethereum?.isMetaMask)
+      
+      // Check for common connection issues
+      if (!window.ethereum) {
+        setConnectionError("No wallet detected. Please install MetaMask or another Web3 wallet.")
+      } else if (!window.ethereum.isMetaMask && !window.ethereum.isCoinbaseWallet) {
+        setConnectionError("Unsupported wallet detected. Please use MetaMask or Coinbase Wallet.")
+      }
     }
   }, [])
 
+  // Handle connection errors
+  useEffect(() => {
+    if (connectError) {
+      console.error("Wallet connection error:", connectError)
+      setConnectionError(connectError.message || "Failed to connect wallet")
+    }
+  }, [connectError])
+
   const handleConnectMetaMask = async () => {
+    setConnectionError("")
     const metaMaskConnector = connectors.find(c => c.id === "metaMask")
     if (metaMaskConnector) {
       try {
         await connect({ connector: metaMaskConnector })
       } catch (error) {
         console.error("Failed to connect MetaMask:", error)
+        setConnectionError("Failed to connect MetaMask. Please try again.")
       }
+    } else {
+      setConnectionError("MetaMask connector not available")
     }
   }
 
   const handleConnectWalletConnect = async () => {
+    setConnectionError("")
     const walletConnectConnector = connectors.find(c => c.id === "walletConnect")
     if (walletConnectConnector) {
       try {
         await connect({ connector: walletConnectConnector })
       } catch (error) {
         console.error("Failed to connect WalletConnect:", error)
+        setConnectionError("Failed to connect WalletConnect. Please try again.")
       }
+    } else {
+      setConnectionError("WalletConnect connector not available")
     }
   }
 
@@ -68,37 +93,48 @@ export function WalletConnection() {
   }
 
   const handleDisconnect = () => {
+    setConnectionError("")
     disconnect()
   }
 
   if (!isConnected) {
     return (
-      <div className="flex items-center gap-2">
-        {isMetaMaskInstalled ? (
-          <Button onClick={handleConnectMetaMask} className="flex items-center gap-2">
-            <Wallet className="h-4 w-4" />
-            Connect MetaMask
-          </Button>
-        ) : (
-          <Button onClick={handleConnectMetaMask} variant="outline" className="flex items-center gap-2">
-            <Wallet className="h-4 w-4" />
-            Connect MetaMask
-          </Button>
-        )}
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <ChevronDown className="h-4 w-4" />
+      <div className="flex flex-col items-end gap-2">
+        <div className="flex items-center gap-2">
+          {isMetaMaskInstalled ? (
+            <Button onClick={handleConnectMetaMask} className="flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              Connect MetaMask
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleConnectWalletConnect}>
-              <Link className="h-4 w-4 mr-2" />
-              WalletConnect
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          ) : (
+            <Button onClick={handleConnectMetaMask} variant="outline" className="flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              Connect MetaMask
+            </Button>
+          )}
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleConnectWalletConnect}>
+                <Link className="h-4 w-4 mr-2" />
+                WalletConnect
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        
+        {/* Show connection errors */}
+        {connectionError && (
+          <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 max-w-xs">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            <span className="text-xs">{connectionError}</span>
+          </div>
+        )}
       </div>
     )
   }
