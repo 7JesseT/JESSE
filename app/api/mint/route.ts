@@ -4,6 +4,7 @@ import { baseSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
 import { promises as fs } from "fs"
 import path from "path"
+import { createTransaction } from "@/lib/transactions"
 
 const ATTENDANCE_CONTRACT = process.env.NEXT_PUBLIC_ATTENDANCE_CONTRACT as `0x${string}`
 const PRIVATE_KEY = process.env.MINTER_PRIVATE_KEY as `0x${string}`
@@ -72,6 +73,21 @@ export async function POST(request: NextRequest) {
     }
     mints.push(mintRecord)
     await fs.writeFile(MINTS_PATH, JSON.stringify(mints, null, 2))
+
+    // Create transaction record
+    await createTransaction({
+      user: to,
+      amount: 0, // NFT mints are typically free
+      currency: 'ETH',
+      type: 'nft_mint',
+      status: 'confirmed', // NFT mint is confirmed when transaction succeeds
+      timestamp: new Date().toISOString(),
+      txHash: hash,
+      metadata: {
+        event,
+        tokenId: tokenId.toString()
+      }
+    })
 
     return NextResponse.json({
       success: true,

@@ -2,6 +2,9 @@
 
 import { WalletConnection } from "@/components/wallet-connection"
 import { NetworkToggle } from "@/components/network-toggle"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Package, Receipt } from "lucide-react"
 
 export function Header() {
   return (
@@ -9,13 +12,29 @@ export function Header() {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">BD</span>
-            </div>
-            <h1 className="text-xl font-semibold text-foreground">Base Daily</h1>
+            <Link href="/" className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">BD</span>
+              </div>
+              <h1 className="text-xl font-semibold text-foreground">Base Daily</h1>
+            </Link>
           </div>
 
           <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/transactions" className="flex items-center gap-2">
+                  <Receipt className="h-4 w-4" />
+                  Transactions
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/shipments" className="flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Shipments
+                </Link>
+              </Button>
+            </div>
             <NetworkToggle compact />
             <WalletConnection />
           </div>

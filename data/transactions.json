@@ -1,0 +1,44 @@
+{
+  "transactions": [
+    {
+      "id": "sample-1",
+      "user": "0x1234567890123456789012345678901234567890",
+      "amount": 0.5,
+      "currency": "ETH",
+      "type": "tip",
+      "status": "pending",
+      "timestamp": "2025-01-15T10:00:00Z",
+      "txHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+      "metadata": {
+        "recipientId": "env-club"
+      }
+    },
+    {
+      "id": "sample-2",
+      "user": "0x2345678901234567890123456789012345678901",
+      "amount": 2.0,
+      "currency": "USDC",
+      "type": "file_purchase",
+      "status": "confirmed",
+      "timestamp": "2025-01-15T11:30:00Z",
+      "txHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+      "metadata": {
+        "fileId": "file1"
+      }
+    },
+    {
+      "id": "sample-3",
+      "user": "0x3456789012345678901234567890123456789012",
+      "amount": 0,
+      "currency": "ETH",
+      "type": "nft_mint",
+      "status": "shipped",
+      "timestamp": "2025-01-15T12:15:00Z",
+      "txHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+      "metadata": {
+        "event": "week1",
+        "tokenId": "1"
+      }
+    }
+  ]
+}

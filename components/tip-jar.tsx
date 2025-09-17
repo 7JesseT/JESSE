@@ -182,6 +182,34 @@ export function TipJar() {
         }
         saveTipTransaction(tipTransaction)
         setTotals(getAllTotals())
+
+        // Create transaction record for tracking
+        try {
+          const response = await fetch('/api/transactions/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              user: address || 'unknown',
+              amount: numericAmount,
+              currency,
+              type: 'tip',
+              status: 'confirmed', // Tips are confirmed when transaction succeeds
+              timestamp: new Date().toISOString(),
+              txHash: hash,
+              metadata: {
+                recipientId: selectedRecipientId
+              }
+            })
+          })
+          
+          if (!response.ok) {
+            console.error('Failed to create transaction record:', await response.text())
+          }
+        } catch (error) {
+          console.error('Failed to create transaction record:', error)
+        }
       }
 
       // Random reward logic - 10% chance to mint special NFT

@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { addPurchase, Purchase } from '@/lib/purchases';
 import { getFileById } from '@/lib/files';
 import { getSignedDownloadUrl, isS3Configured } from '@/lib/storage-s3';
+import { createTransaction } from '@/lib/transactions';
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,6 +77,20 @@ export async function POST(request: NextRequest) {
     };
 
     await addPurchase(purchase);
+
+    // Create transaction record
+    await createTransaction({
+      user: buyerAddress || 'demo-user',
+      amount: file.priceUsd,
+      currency: file.priceToken as 'ETH' | 'USDC',
+      type: 'file_purchase',
+      status: demoMode ? 'confirmed' : 'pending', // Demo mode is immediately confirmed
+      timestamp: now.toISOString(),
+      txHash: txHash || 'demo-mode',
+      metadata: {
+        fileId: file.id
+      }
+    });
 
     // Generate download URL based on storage method
     let downloadUrl: string;
