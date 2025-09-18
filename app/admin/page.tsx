@@ -192,6 +192,22 @@ export default function AdminHome() {
             </Link>
           </CardContent>
         </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              🚚 Shipments
+            </CardTitle>
+            <CardDescription>
+              Track and manage shipment status
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/shipments">
+              <Button className="w-full">Track Shipments</Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ export interface Transaction {
   amount: number
   currency: 'ETH' | 'USDC'
   type: 'tip' | 'nft_mint' | 'file_purchase' | 'special_reward'
-  status: 'pending' | 'confirmed' | 'shipped'
+  status: 'pending' | 'confirmed' | 'shipped' | 'delivered'
   timestamp: string
   txHash?: string // blockchain transaction hash
   metadata?: {

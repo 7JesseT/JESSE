@@ -16,7 +16,7 @@
     {
       "id": "sample-2",
       "user": "0x2345678901234567890123456789012345678901",
-      "amount": 2.0,
+      "amount": 2,
       "currency": "USDC",
       "type": "file_purchase",
       "status": "confirmed",
@@ -38,6 +38,32 @@
       "metadata": {
         "event": "week1",
         "tokenId": "1"
+      }
+    },
+    {
+      "id": "sample-4",
+      "user": "0x4567890123456789012345678901234567890123",
+      "amount": 5,
+      "currency": "USDC",
+      "type": "file_purchase",
+      "status": "delivered",
+      "timestamp": "2025-01-14T09:30:00Z",
+      "txHash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+      "metadata": {
+        "fileId": "base-guide-2024"
+      }
+    },
+    {
+      "id": "sample-5",
+      "user": "0x5678901234567890123456789012345678901234",
+      "amount": 10,
+      "currency": "USDC",
+      "type": "file_purchase",
+      "status": "confirmed",
+      "timestamp": "2025-01-16T14:20:00Z",
+      "txHash": "0x5555555555555555555555555555555555555555555555555555555555555555",
+      "metadata": {
+        "fileId": "nft-course-advanced"
       }
     }
   ]

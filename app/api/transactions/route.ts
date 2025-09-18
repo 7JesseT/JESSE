@@ -36,10 +36,10 @@ export async function POST(request: NextRequest) {
     }
     
     // Validate status
-    const validStatuses: TransactionStatus[] = ['pending', 'confirmed', 'shipped']
+    const validStatuses: TransactionStatus[] = ['pending', 'confirmed', 'shipped', 'delivered']
     if (!validStatuses.includes(status)) {
       return NextResponse.json(
-        { error: 'Invalid status. Must be one of: pending, confirmed, shipped' },
+        { error: 'Invalid status. Must be one of: pending, confirmed, shipped, delivered' },
         { status: 400 }
       )
     }
