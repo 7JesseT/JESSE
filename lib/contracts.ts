@@ -15,5 +15,6 @@ export const paymentAbi = parseAbi(["function transfer() external payable", "rec
 // Contract addresses
 export const CONTRACTS = {
   ATTENDANCE: process.env.NEXT_PUBLIC_ATTENDANCE_CONTRACT as `0x${string}`,
+  VIP: process.env.NEXT_PUBLIC_VIP_CONTRACT as `0x${string}`,
   TIP_JAR: process.env.NEXT_PUBLIC_TIP_ADDRESS as `0x${string}`,
 } as const

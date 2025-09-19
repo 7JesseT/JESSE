@@ -28,12 +28,12 @@ export default function VipPage() {
 
   // Check VIP Pass ownership
   const { data: vipBalance, refetch: refetchVipBalance } = useContractRead({
-    address: CONTRACTS.ATTENDANCE,
+    address: CONTRACTS.VIP || CONTRACTS.ATTENDANCE,
     abi: erc1155Abi,
     functionName: "balanceOf",
     args: address ? [address, BigInt(VIP_PASS_ID)] : undefined,
     chainId: networkConfig.chain.id,
-    enabled: !!address && !!CONTRACTS.ATTENDANCE && !ALLOW_VIP_WITHOUT_WALLET,
+    enabled: !!address && !!(CONTRACTS.VIP || CONTRACTS.ATTENDANCE) && !ALLOW_VIP_WITHOUT_WALLET,
   })
 
   useEffect(() => {
@@ -225,13 +225,13 @@ export default function VipPage() {
               <>
                 Bypass Mode Active | 
                 Network: {networkConfig.name} | 
-                Contract: {CONTRACTS.ATTENDANCE?.slice(0, 6)}...{CONTRACTS.ATTENDANCE?.slice(-4)}
+                Contract: {(CONTRACTS.VIP || CONTRACTS.ATTENDANCE)?.slice(0, 6)}...{(CONTRACTS.VIP || CONTRACTS.ATTENDANCE)?.slice(-4)}
               </>
             ) : (
               <>
                 Wallet: {address?.slice(0, 6)}...{address?.slice(-4)} | 
                 Network: {networkConfig.name} | 
-                Contract: {CONTRACTS.ATTENDANCE?.slice(0, 6)}...{CONTRACTS.ATTENDANCE?.slice(-4)}
+                Contract: {(CONTRACTS.VIP || CONTRACTS.ATTENDANCE)?.slice(0, 6)}...{(CONTRACTS.VIP || CONTRACTS.ATTENDANCE)?.slice(-4)}
               </>
             )}
           </div>

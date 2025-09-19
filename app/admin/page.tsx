@@ -1,54 +1,83 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useAccount } from 'wagmi';
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, LogOut } from 'lucide-react';
+import { Shield, LogOut, Wallet, TrendingUp, Package, Users } from 'lucide-react';
+import { isAdminWallet } from '@/lib/admin-auth';
 
 export default function AdminHome() {
-  const searchParams = useSearchParams();
+  const { address, isConnected } = useAccount();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [adminKey, setAdminKey] = useState('');
+  const [stats, setStats] = useState({
+    totalTips: 0,
+    totalTransactions: 0,
+    totalUsers: 0,
+    pendingShipments: 0
+  });
 
   // Check authorization
   useEffect(() => {
-    const checkAuth = () => {
-      const urlKey = searchParams?.get('admin');
-      const storedKey = localStorage.getItem('adminKey');
-      
-      if (urlKey === 'base-daily-admin-2024' || storedKey === 'base-daily-admin-2024') {
-        setIsAuthorized(true);
-        if (urlKey === 'base-daily-admin-2024') {
-          localStorage.setItem('adminKey', 'base-daily-admin-2024');
+    const checkAuth = async () => {
+      if (!isConnected || !address) {
+        setIsAuthorized(false);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/admin/check?wallet=${address}`);
+        const data = await response.json();
+        setIsAuthorized(data.isAdmin);
+        
+        if (data.isAdmin) {
+          // Load dashboard stats
+          await loadStats();
         }
-      } else {
+      } catch (error) {
+        console.error('Admin check failed:', error);
         setIsAuthorized(false);
       }
+      
       setIsLoading(false);
     };
 
     checkAuth();
-  }, [searchParams]);
+  }, [isConnected, address]);
 
-  const handleAdminLogin = () => {
-    if (adminKey === 'base-daily-admin-2024') {
-      localStorage.setItem('adminKey', adminKey);
-      setIsAuthorized(true);
-    } else {
-      alert('Invalid admin key');
+  const loadStats = async () => {
+    try {
+      // Load tip jar totals
+      const tipsResponse = await fetch('/api/tips');
+      const tipsData = tipsResponse.ok ? await tipsResponse.json() : { totals: {} };
+      
+      // Load transactions
+      const transactionsResponse = await fetch('/api/transactions');
+      const transactionsData = transactionsResponse.ok ? await transactionsResponse.json() : { transactions: [] };
+      
+      // Calculate stats
+      const totalTips = Object.values(tipsData.totals || {}).reduce((sum: number, recipient: any) => {
+        return sum + (recipient.ETH || 0) + (recipient.USDC || 0);
+      }, 0);
+      
+      const uniqueUsers = new Set(transactionsData.transactions?.map((t: any) => t.user) || []).size;
+      const pendingShipments = transactionsData.transactions?.filter((t: any) => 
+        t.status === 'confirmed' || t.status === 'shipped'
+      ).length || 0;
+
+      setStats({
+        totalTips,
+        totalTransactions: transactionsData.transactions?.length || 0,
+        totalUsers: uniqueUsers,
+        pendingShipments
+      });
+    } catch (error) {
+      console.error('Failed to load stats:', error);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('adminKey');
-    setIsAuthorized(false);
-    setAdminKey('');
   };
 
   if (isLoading) {
@@ -72,27 +101,25 @@ export default function AdminHome() {
                 Admin Access Required
               </CardTitle>
               <CardDescription>
-                Enter admin key to access the admin dashboard
+                Connect your wallet to access the admin dashboard
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="adminKey">Admin Key</Label>
-                <Input
-                  id="adminKey"
-                  type="password"
-                  value={adminKey}
-                  onChange={(e) => setAdminKey(e.target.value)}
-                  placeholder="Enter admin key"
-                  className="mt-1"
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                  Demo key: <code className="bg-muted px-1 rounded">base-daily-admin-2024</code>
-                </p>
-              </div>
-              <Button onClick={handleAdminLogin} className="w-full">
-                Access Admin Panel
-              </Button>
+              {!isConnected ? (
+                <Alert>
+                  <Wallet className="h-4 w-4" />
+                  <AlertDescription>
+                    Please connect your wallet to access the admin panel. Only authorized admin wallets can access this dashboard.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert variant="destructive">
+                  <Shield className="h-4 w-4" />
+                  <AlertDescription>
+                    This wallet address is not authorized for admin access. Please contact the administrator.
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -107,17 +134,14 @@ export default function AdminHome() {
           <div>
             <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
             <p className="text-muted-foreground">
-              Manage your application's content, users, and analytics
+              Manage transactions, shipments, and analytics
             </p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={handleLogout}
-            className="flex items-center gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-muted-foreground">
+              Connected: {address?.slice(0, 6)}...{address?.slice(-4)}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -128,19 +152,75 @@ export default function AdminHome() {
         </AlertDescription>
       </Alert>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Tips</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalTips.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              ETH + USDC combined
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalTransactions}</div>
+            <p className="text-xs text-muted-foreground">
+              All transaction types
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Unique Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            <p className="text-xs text-muted-foreground">
+              Distinct wallet addresses
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Shipments</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.pendingShipments}</div>
+            <p className="text-xs text-muted-foreground">
+              Awaiting fulfillment
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              📊 Dashboard
+              📊 Transactions
             </CardTitle>
             <CardDescription>
-              View analytics, KPIs, and transaction data
+              View and manage all transactions with search and filters
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href="/admin/dashboard">
-              <Button className="w-full">View Dashboard</Button>
+            <Link href="/admin/transactions">
+              <Button className="w-full">Manage Transactions</Button>
             </Link>
           </CardContent>
         </Card>
@@ -205,6 +285,22 @@ export default function AdminHome() {
           <CardContent>
             <Link href="/shipments">
               <Button className="w-full">Track Shipments</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              📈 Analytics
+            </CardTitle>
+            <CardDescription>
+              View detailed analytics and reports
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/admin/dashboard">
+              <Button className="w-full">View Analytics</Button>
             </Link>
           </CardContent>
         </Card>

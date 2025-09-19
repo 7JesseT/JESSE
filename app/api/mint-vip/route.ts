@@ -5,8 +5,12 @@ import { privateKeyToAccount } from "viem/accounts"
 import { promises as fs } from "fs"
 import path from "path"
 
+const VIP_CONTRACT = process.env.NEXT_PUBLIC_VIP_CONTRACT as `0x${string}`
 const ATTENDANCE_CONTRACT = process.env.NEXT_PUBLIC_ATTENDANCE_CONTRACT as `0x${string}`
 const PRIVATE_KEY = process.env.MINTER_PRIVATE_KEY as `0x${string}`
+
+// Use VIP contract if available, otherwise fall back to attendance contract
+const CONTRACT_ADDRESS = VIP_CONTRACT || ATTENDANCE_CONTRACT
 const MINTS_PATH = path.resolve(process.cwd(), "data/mints.json")
 
 // ERC-1155 ABI for minting
@@ -23,7 +27,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required parameters" }, { status: 400 })
     }
 
-    if (!ATTENDANCE_CONTRACT || !PRIVATE_KEY) {
+    if (!CONTRACT_ADDRESS || !PRIVATE_KEY) {
       return NextResponse.json({ error: "Contract or private key not configured" }, { status: 500 })
     }
 
@@ -59,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     // Mint the VIP Pass NFT
     const hash = await walletClient.writeContract({
-      address: ATTENDANCE_CONTRACT,
+      address: CONTRACT_ADDRESS,
       abi: erc1155Abi,
       functionName: "mint",
       args: [to as `0x${string}`, BigInt(tokenId), BigInt(amount), "0x"],
