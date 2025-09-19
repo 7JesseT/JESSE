@@ -4,8 +4,6 @@ export interface AdminWallet {
 }
 
 export const getAdminWallets = (): AdminWallet[] => {
-  if (typeof window === 'undefined') return []
-  
   try {
     const adminWalletsEnv = process.env.NEXT_PUBLIC_ADMIN_WALLETS
     if (!adminWalletsEnv) return []
@@ -22,9 +20,15 @@ export const isAdminWallet = (walletAddress: string): boolean => {
   if (!walletAddress) return false
   
   const adminWallets = getAdminWallets()
-  return adminWallets.some(wallet => 
+  console.log('Admin wallets:', adminWallets)
+  console.log('Checking wallet:', walletAddress)
+  
+  const isAdmin = adminWallets.some(wallet => 
     wallet.address.toLowerCase() === walletAddress.toLowerCase()
   )
+  
+  console.log('Is admin:', isAdmin)
+  return isAdmin
 }
 
 export const getAdminWalletInfo = (walletAddress: string): AdminWallet | null => {
