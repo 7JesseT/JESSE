@@ -119,7 +119,7 @@ export function NetworkToggle({ onNetworkChange, showLabel = true, compact = fal
           <Switch
             checked={selectedNetwork === "mainnet"}
             onCheckedChange={handleNetworkToggle}
-            disabled={!isConnected}
+            disabled={false}
           />
           <span className="text-sm text-muted-foreground">
             {selectedNetwork === "mainnet" ? "Mainnet" : "Sepolia"}
@@ -148,7 +148,7 @@ export function NetworkToggle({ onNetworkChange, showLabel = true, compact = fal
           <Switch
             checked={selectedNetwork === "mainnet"}
             onCheckedChange={handleNetworkToggle}
-            disabled={!isConnected}
+            disabled={false}
           />
           <span className="text-sm">
             {selectedNetwork === "mainnet" ? "Mainnet" : "Sepolia"}
@@ -172,9 +172,9 @@ export function NetworkToggle({ onNetworkChange, showLabel = true, compact = fal
       )}
 
       {!isConnected && (
-        <div className="p-2 bg-muted rounded-lg">
-          <p className="text-xs text-muted-foreground">
-            Connect wallet to switch networks
+        <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+          <p className="text-xs text-blue-800 dark:text-blue-200">
+            💡 You can switch networks even without connecting a wallet. Connect your wallet to automatically switch to the selected network.
           </p>
         </div>
       )}
