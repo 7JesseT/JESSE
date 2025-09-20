@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
     }
     
     // Validate status
-    if (!['pending', 'confirmed', 'shipped'].includes(status)) {
+    if (!['pending', 'confirmed', 'shipped', 'delivered', 'refunded'].includes(status)) {
       return NextResponse.json(
-        { error: 'Invalid status. Must be one of: pending, confirmed, shipped' },
+        { error: 'Invalid status. Must be one of: pending, confirmed, shipped, delivered, refunded' },
         { status: 400 }
       )
     }

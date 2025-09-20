@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ExternalLink, RefreshCw, Package, Heart, FileText, Gift } from "lucide-react"
+import { ExternalLink, RefreshCw, Package, Heart, FileText, Gift, RotateCcw } from "lucide-react"
 import { BASESCAN_TX_URL } from "@/config/addresses"
 import { Transaction } from "@/lib/transactions"
 
@@ -52,6 +52,10 @@ export default function TransactionsPage() {
         return <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Confirmed</Badge>
       case "shipped":
         return <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Shipped</Badge>
+      case "delivered":
+        return <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Delivered</Badge>
+      case "refunded":
+        return <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Refunded</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
     }
@@ -141,6 +145,7 @@ export default function TransactionsPage() {
                     <TableHead>Status</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Transaction</TableHead>
+                    <TableHead>Refund Info</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -173,6 +178,31 @@ export default function TransactionsPage() {
                           </a>
                         ) : (
                           <span className="text-muted-foreground text-sm">Demo Mode</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {transaction.status === 'refunded' && transaction.refundTxHash ? (
+                          <div className="text-xs">
+                            <div className="flex items-center gap-1 mb-1">
+                              <RotateCcw className="h-3 w-3 text-red-500" />
+                              <span className="text-red-600 dark:text-red-400">Refunded</span>
+                            </div>
+                            <a
+                              href={BASESCAN_TX_URL(transaction.refundTxHash)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                              View Refund <ExternalLink className="h-3 w-3" />
+                            </a>
+                            {transaction.refundedAt && (
+                              <div className="text-muted-foreground mt-1">
+                                {formatDate(transaction.refundedAt)}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
                         )}
                       </TableCell>
                     </TableRow>

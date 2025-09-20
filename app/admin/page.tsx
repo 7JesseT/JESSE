@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, LogOut, Wallet, TrendingUp, Package, Users } from 'lucide-react';
+import { Shield, LogOut, Wallet, TrendingUp, Package, Users, RotateCcw } from 'lucide-react';
 import { isAdminWallet } from '@/lib/admin-auth';
 
 export default function AdminHome() {
@@ -17,7 +17,8 @@ export default function AdminHome() {
     totalTips: 0,
     totalTransactions: 0,
     totalUsers: 0,
-    pendingShipments: 0
+    pendingShipments: 0,
+    totalRefunds: 0
   });
 
   // Check authorization
@@ -68,12 +69,16 @@ export default function AdminHome() {
       const pendingShipments = transactionsData.transactions?.filter((t: any) => 
         t.status === 'confirmed' || t.status === 'shipped'
       ).length || 0;
+      const totalRefunds = transactionsData.transactions?.filter((t: any) => 
+        t.status === 'refunded'
+      ).length || 0;
 
       setStats({
         totalTips,
         totalTransactions: transactionsData.transactions?.length || 0,
         totalUsers: uniqueUsers,
-        pendingShipments
+        pendingShipments,
+        totalRefunds
       });
     } catch (error) {
       console.error('Failed to load stats:', error);
@@ -153,7 +158,7 @@ export default function AdminHome() {
       </Alert>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Tips</CardTitle>
@@ -202,6 +207,19 @@ export default function AdminHome() {
             <div className="text-2xl font-bold">{stats.pendingShipments}</div>
             <p className="text-xs text-muted-foreground">
               Awaiting fulfillment
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Refunds</CardTitle>
+            <RotateCcw className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalRefunds}</div>
+            <p className="text-xs text-muted-foreground">
+              Processed refunds
             </p>
           </CardContent>
         </Card>

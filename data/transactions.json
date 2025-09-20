@@ -59,9 +59,12 @@
       "amount": 10,
       "currency": "USDC",
       "type": "file_purchase",
-      "status": "confirmed",
+      "status": "refunded",
       "timestamp": "2025-01-16T14:20:00Z",
       "txHash": "0x5555555555555555555555555555555555555555555555555555555555555555",
+      "refundTxHash": "0x6666666666666666666666666666666666666666666666666666666666666666",
+      "refundedAt": "2025-01-16T16:30:00Z",
+      "refundedBy": "0x1234567890123456789012345678901234567890",
       "metadata": {
         "fileId": "nft-course-advanced"
       }

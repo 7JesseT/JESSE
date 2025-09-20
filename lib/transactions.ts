@@ -4,9 +4,12 @@ export interface Transaction {
   amount: number
   currency: 'ETH' | 'USDC'
   type: 'tip' | 'nft_mint' | 'file_purchase' | 'special_reward'
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered'
+  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'refunded'
   timestamp: string
   txHash?: string // blockchain transaction hash
+  refundTxHash?: string // refund transaction hash
+  refundedAt?: string // refund timestamp
+  refundedBy?: string // admin wallet that processed refund
   metadata?: {
     recipientId?: string // for tips
     fileId?: string // for file purchases
@@ -86,4 +89,41 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
 export const getTransactionById = async (id: string): Promise<Transaction | null> => {
   const data = await getTransactionsData()
   return data.transactions.find(t => t.id === id) || null
+}
+
+export const processRefund = async (
+  transactionId: string, 
+  refundTxHash: string, 
+  refundedBy: string
+): Promise<Transaction | null> => {
+  const data = await getTransactionsData()
+  const transactionIndex = data.transactions.findIndex(t => t.id === transactionId)
+  
+  if (transactionIndex === -1) {
+    return null
+  }
+  
+  const transaction = data.transactions[transactionIndex]
+  
+  // Only allow refunds for confirmed transactions that haven't been refunded
+  if (transaction.status !== 'confirmed' && transaction.status !== 'shipped' && transaction.status !== 'delivered') {
+    throw new Error('Transaction must be confirmed, shipped, or delivered to be refunded')
+  }
+  
+  if (transaction.status === 'refunded') {
+    throw new Error('Transaction has already been refunded')
+  }
+  
+  // Update transaction with refund information
+  data.transactions[transactionIndex] = {
+    ...transaction,
+    status: 'refunded',
+    refundTxHash,
+    refundedAt: new Date().toISOString(),
+    refundedBy
+  }
+  
+  await saveTransactionsData(data)
+  
+  return data.transactions[transactionIndex]
 }

@@ -17,7 +17,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
-    if (!status || !['pending', 'confirmed', 'shipped', 'delivered'].includes(status)) {
+    if (!status || !['pending', 'confirmed', 'shipped', 'delivered', 'refunded'].includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
     

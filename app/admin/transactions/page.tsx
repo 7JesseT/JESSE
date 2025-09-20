@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Shield, Search, Filter, Package, CheckCircle, Clock, Truck, Home } from 'lucide-react';
+import { Shield, Search, Filter, Package, CheckCircle, Clock, Truck, Home, RotateCcw } from 'lucide-react';
 import { Transaction, TransactionStatus } from '@/lib/transactions';
 
 export default function AdminTransactions() {
@@ -23,6 +23,7 @@ export default function AdminTransactions() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [isRefunding, setIsRefunding] = useState<string | null>(null);
 
   // Check authorization
   useEffect(() => {
@@ -115,6 +116,40 @@ export default function AdminTransactions() {
     }
   };
 
+  const processRefund = async (transaction: Transaction) => {
+    if (!address) return;
+    
+    setIsRefunding(transaction.id);
+    try {
+      const response = await fetch('/api/refund', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-wallet-address': address,
+        },
+        body: JSON.stringify({
+          transactionId: transaction.id,
+          buyerAddress: transaction.user,
+          network: 'sepolia' // Default to sepolia, could be made configurable
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        await loadTransactions(); // Reload transactions
+        alert(`Refund processed successfully! Transaction hash: ${result.refundTxHash}`);
+      } else {
+        alert(`Refund failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error processing refund:', error);
+      alert('Failed to process refund');
+    } finally {
+      setIsRefunding(null);
+    }
+  };
+
   const getStatusIcon = (status: TransactionStatus) => {
     switch (status) {
       case 'pending':
@@ -125,6 +160,8 @@ export default function AdminTransactions() {
         return <Truck className="h-4 w-4" />;
       case 'delivered':
         return <Home className="h-4 w-4" />;
+      case 'refunded':
+        return <RotateCcw className="h-4 w-4" />;
       default:
         return <Clock className="h-4 w-4" />;
     }
@@ -140,6 +177,8 @@ export default function AdminTransactions() {
         return 'bg-purple-100 text-purple-800';
       case 'delivered':
         return 'bg-green-100 text-green-800';
+      case 'refunded':
+        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -241,6 +280,7 @@ export default function AdminTransactions() {
                   <SelectItem value="confirmed">Confirmed</SelectItem>
                   <SelectItem value="shipped">Shipped</SelectItem>
                   <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="refunded">Refunded</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -283,6 +323,7 @@ export default function AdminTransactions() {
                     <TableHead>Amount</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Timestamp</TableHead>
+                    <TableHead>Refund Info</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -315,6 +356,25 @@ export default function AdminTransactions() {
                         {formatTimestamp(transaction.timestamp)}
                       </TableCell>
                       <TableCell>
+                        {transaction.status === 'refunded' && transaction.refundTxHash ? (
+                          <div className="text-xs">
+                            <div className="font-mono">
+                              {transaction.refundTxHash.slice(0, 8)}...
+                            </div>
+                            <div className="text-muted-foreground">
+                              {transaction.refundedAt && formatTimestamp(transaction.refundedAt)}
+                            </div>
+                            {transaction.refundedBy && (
+                              <div className="text-muted-foreground">
+                                by {transaction.refundedBy.slice(0, 6)}...
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <div className="flex gap-1">
                           {transaction.status === 'confirmed' && (
                             <Button
@@ -334,6 +394,16 @@ export default function AdminTransactions() {
                               disabled={isUpdating === transaction.id}
                             >
                               {isUpdating === transaction.id ? '...' : 'Deliver'}
+                            </Button>
+                          )}
+                          {(transaction.status === 'confirmed' || transaction.status === 'shipped' || transaction.status === 'delivered') && transaction.currency === 'USDC' && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => processRefund(transaction)}
+                              disabled={isRefunding === transaction.id}
+                            >
+                              {isRefunding === transaction.id ? '...' : 'Refund'}
                             </Button>
                           )}
                         </div>
