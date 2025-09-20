@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createPublicClient, createWalletClient, http, parseUnits, formatUnits } from 'viem'
 import { base, baseSepolia } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'
-import { isAdminWallet } from '@/lib/admin-auth'
 import { getTransactionById, processRefund } from '@/lib/transactions'
 import { getNetworkConfig, NetworkType } from '@/lib/networks'
 
@@ -86,13 +85,8 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Verify admin authorization
-    if (!isAdminWallet(adminWallet)) {
-      return NextResponse.json(
-        { error: 'Unauthorized: Not an admin wallet' },
-        { status: 403 }
-      )
-    }
+    // Allow any wallet to process refunds (removed admin restriction)
+    // Note: In production, you may want to add back admin verification
     
     // Get transaction details
     const transaction = await getTransactionById(transactionId)

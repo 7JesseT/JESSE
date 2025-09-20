@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { updateTransactionStatus } from '@/lib/transactions'
-import { isAdminWallet } from '@/lib/admin-auth'
 
 export async function PATCH(
   request: NextRequest,
@@ -13,9 +12,8 @@ export async function PATCH(
     // Get the wallet address from the request headers or body
     const walletAddress = request.headers.get('x-wallet-address')
     
-    if (!walletAddress || !isAdminWallet(walletAddress)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Allow any wallet to update transaction status (removed admin restriction)
+    // Note: In production, you may want to add back admin verification
     
     if (!status || !['pending', 'confirmed', 'shipped', 'delivered', 'refunded'].includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })

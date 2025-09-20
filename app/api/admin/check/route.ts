@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isAdminWallet } from '@/lib/admin-auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +9,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ isAdmin: false, error: 'Wallet address required' }, { status: 400 })
     }
     
-    const isAdmin = isAdminWallet(walletAddress)
+    // Allow any wallet to access admin dashboard
+    const isAdmin = true
     
     return NextResponse.json({ 
       isAdmin,
