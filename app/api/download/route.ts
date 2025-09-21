@@ -5,6 +5,8 @@ import { isTokenValid } from '@/lib/purchases';
 import { getFileById } from '@/lib/files';
 import { getSignedDownloadUrl, isS3Configured } from '@/lib/storage-s3';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuHeader,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -67,7 +67,7 @@ export function NotificationDropdown() {
       </DropdownMenuTrigger>
       
       <DropdownMenuContent align="end" className="w-80 p-0">
-        <DropdownMenuHeader className="p-4 pb-2">
+        <div className="p-4 pb-2">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Notifications</h3>
             <div className="flex items-center gap-1">
@@ -100,7 +100,7 @@ export function NotificationDropdown() {
               {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
             </p>
           )}
-        </DropdownMenuHeader>
+        </div>
         
         <Separator />
         
