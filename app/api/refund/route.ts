@@ -187,6 +187,26 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    // Trigger notification for successful refund
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'success',
+          category: 'refund',
+          title: 'Refund Processed',
+          message: '💸 Refund processed successfully.',
+          autoDismiss: true,
+          dismissAfter: 5000,
+        }),
+      });
+    } catch (notificationError) {
+      console.error('Failed to send refund notification:', notificationError);
+    }
     
     return NextResponse.json({
       success: true,

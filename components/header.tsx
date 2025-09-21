@@ -2,6 +2,7 @@
 
 import { WalletConnection } from "@/components/wallet-connection"
 import { NetworkToggle } from "@/components/network-toggle"
+import { NotificationDropdown } from "@/components/notifications/notification-dropdown"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Package, Receipt } from "lucide-react"
@@ -35,6 +36,7 @@ export function Header() {
                 </Link>
               </Button>
             </div>
+            <NotificationDropdown />
             <NetworkToggle compact />
             <WalletConnection />
           </div>

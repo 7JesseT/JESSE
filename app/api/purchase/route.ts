@@ -92,6 +92,26 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // Trigger notification for successful payment
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'success',
+          category: 'payment',
+          title: 'Payment Confirmed',
+          message: `✅ Payment confirmed for ${file.name}.`,
+          autoDismiss: true,
+          dismissAfter: 5000,
+        }),
+      });
+    } catch (notificationError) {
+      console.error('Failed to send payment notification:', notificationError);
+    }
+
     // Generate download URL based on storage method
     let downloadUrl: string;
     let downloadMethod: string;

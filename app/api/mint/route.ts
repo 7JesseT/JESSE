@@ -89,6 +89,26 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Trigger notification for successful mint
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'success',
+          category: 'mint',
+          title: 'NFT Minted',
+          message: 'NFT minting completed successfully.',
+          autoDismiss: true,
+          dismissAfter: 5000,
+        }),
+      });
+    } catch (notificationError) {
+      console.error('Failed to send mint notification:', notificationError);
+    }
+
     return NextResponse.json({
       success: true,
       txHash: hash,
@@ -96,6 +116,26 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Minting error:", error)
+    
+    // Trigger notification for failed mint
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'error',
+          category: 'mint',
+          title: 'Mint Failed',
+          message: `NFT minting failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          autoDismiss: false,
+        }),
+      });
+    } catch (notificationError) {
+      console.error('Failed to send mint failure notification:', notificationError);
+    }
+    
     return NextResponse.json(
       { error: "Failed to mint NFT", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },

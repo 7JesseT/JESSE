@@ -5,6 +5,7 @@ import { Paywall } from "@/components/paywall"
 import { PayPerFile } from "@/components/pay-per-file"
 import { DailyFeatures } from "@/components/daily-features"
 import { WalletTestCard } from "@/components/wallet-test-card"
+import { NotificationDemo } from "@/components/notifications/notification-demo"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ShoppingCart } from "lucide-react"
@@ -33,6 +34,16 @@ export default function HomePage() {
         {/* Wallet Connection Test */}
         <section className="flex justify-center">
           <WalletTestCard />
+        </section>
+
+        {/* Notification System Demo */}
+        <section>
+          <h2 className="text-2xl font-semibold text-foreground mb-6 text-center">
+            Notification System Demo
+          </h2>
+          <div className="flex justify-center">
+            <NotificationDemo />
+          </div>
         </section>
 
         {/* Daily Features Section */}
