@@ -57,6 +57,14 @@ export const NOTIFICATION_TEMPLATES = {
     autoDismiss: true,
     dismissAfter: 7000,
   },
+  REFUND_REQUESTED: {
+    type: 'info' as const,
+    category: 'refund' as const,
+    title: 'Refund Request Submitted',
+    message: 'Your refund request has been submitted and is under review.',
+    autoDismiss: true,
+    dismissAfter: 5000,
+  },
   REFUND_PROCESSED: {
     type: 'success' as const,
     category: 'refund' as const,
@@ -64,6 +72,14 @@ export const NOTIFICATION_TEMPLATES = {
     message: 'Refund processed successfully.',
     autoDismiss: true,
     dismissAfter: 5000,
+  },
+  REFUND_DENIED: {
+    type: 'warning' as const,
+    category: 'refund' as const,
+    title: 'Refund Request Denied',
+    message: 'Your refund request has been denied.',
+    autoDismiss: true,
+    dismissAfter: 7000,
   },
   ADMIN_NEW_PAYMENT: {
     type: 'info' as const,
@@ -75,9 +91,25 @@ export const NOTIFICATION_TEMPLATES = {
   ADMIN_REFUND_REQUEST: {
     type: 'warning' as const,
     category: 'admin' as const,
-    title: 'Refund Request',
+    title: 'New Refund Request',
     message: 'A refund has been requested.',
     autoDismiss: false,
+  },
+  ADMIN_REFUND_APPROVED: {
+    type: 'success' as const,
+    category: 'admin' as const,
+    title: 'Refund Approved',
+    message: 'Refund request has been approved and processed.',
+    autoDismiss: true,
+    dismissAfter: 5000,
+  },
+  ADMIN_REFUND_DENIED: {
+    type: 'info' as const,
+    category: 'admin' as const,
+    title: 'Refund Denied',
+    message: 'Refund request has been denied.',
+    autoDismiss: true,
+    dismissAfter: 5000,
   },
   ADMIN_MINT_SUCCESS: {
     type: 'success' as const,

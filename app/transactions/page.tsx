@@ -6,29 +6,47 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ExternalLink, RefreshCw, Package, Heart, FileText, Gift, RotateCcw } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { ExternalLink, RefreshCw, Package, Heart, FileText, Gift, RotateCcw, MessageSquare } from "lucide-react"
 import { BASESCAN_TX_URL } from "@/config/addresses"
 import { Transaction } from "@/lib/transactions"
+import { RefundRequest } from "@/lib/refunds"
 
 export default function TransactionsPage() {
   const { address, isConnected } = useAccount()
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [refundRequests, setRefundRequests] = useState<RefundRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>("")
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false)
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
+  const [refundReason, setRefundReason] = useState("")
+  const [submittingRefund, setSubmittingRefund] = useState(false)
 
   const fetchTransactions = async () => {
     if (!address) return
     
     try {
       setLoading(true)
-      const response = await fetch(`/api/transactions?user=${address}`)
-      const data = await response.json()
+      const [transactionsResponse, refundsResponse] = await Promise.all([
+        fetch(`/api/transactions?user=${address}`),
+        fetch(`/api/refund?buyer=${address}`)
+      ])
       
-      if (response.ok) {
-        setTransactions(data.transactions || [])
+      const transactionsData = await transactionsResponse.json()
+      const refundsData = await refundsResponse.json()
+      
+      if (transactionsResponse.ok) {
+        setTransactions(transactionsData.transactions || [])
         setError("")
       } else {
-        setError(data.error || "Failed to fetch transactions")
+        setError(transactionsData.error || "Failed to fetch transactions")
+      }
+      
+      if (refundsResponse.ok) {
+        setRefundRequests(refundsData.refundRequests || [])
       }
     } catch (err) {
       setError("Failed to fetch transactions")
@@ -82,6 +100,55 @@ export default function TransactionsPage() {
 
   const formatDate = (timestamp: string) => {
     return new Date(timestamp).toLocaleString()
+  }
+
+  const handleRefundRequest = async () => {
+    if (!selectedTransaction || !refundReason.trim()) return
+    
+    try {
+      setSubmittingRefund(true)
+      const response = await fetch('/api/refund', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-wallet-address': address!
+        },
+        body: JSON.stringify({
+          transactionId: selectedTransaction.id,
+          reason: refundReason.trim()
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok) {
+        setRefundDialogOpen(false)
+        setRefundReason("")
+        setSelectedTransaction(null)
+        await fetchTransactions() // Refresh data
+        alert('Refund request submitted successfully!')
+      } else {
+        alert(data.error || 'Failed to submit refund request')
+      }
+    } catch (err) {
+      console.error('Error submitting refund request:', err)
+      alert('Failed to submit refund request')
+    } finally {
+      setSubmittingRefund(false)
+    }
+  }
+
+  const getRefundStatusForTransaction = (transactionId: string) => {
+    return refundRequests.find(r => r.transactionId === transactionId)
+  }
+
+  const canRequestRefund = (transaction: Transaction) => {
+    // Can request refund if transaction is confirmed, shipped, or delivered
+    // and no refund request already exists
+    const eligibleStatuses = ['confirmed', 'shipped', 'delivered']
+    const existingRefund = getRefundStatusForTransaction(transaction.id)
+    
+    return eligibleStatuses.includes(transaction.status) && !existingRefund
   }
 
   if (!isConnected) {
@@ -146,6 +213,7 @@ export default function TransactionsPage() {
                     <TableHead>Date</TableHead>
                     <TableHead>Transaction</TableHead>
                     <TableHead>Refund Info</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -201,6 +269,89 @@ export default function TransactionsPage() {
                               </div>
                             )}
                           </div>
+                        ) : (() => {
+                          const refundRequest = getRefundStatusForTransaction(transaction.id)
+                          if (refundRequest) {
+                            return (
+                              <div className="text-xs">
+                                <div className="flex items-center gap-1 mb-1">
+                                  <MessageSquare className="h-3 w-3 text-orange-500" />
+                                  <span className={`${
+                                    refundRequest.status === 'pending' ? 'text-orange-600 dark:text-orange-400' :
+                                    refundRequest.status === 'approved' ? 'text-green-600 dark:text-green-400' :
+                                    'text-red-600 dark:text-red-400'
+                                  }`}>
+                                    {refundRequest.status === 'pending' ? 'Refund Pending' :
+                                     refundRequest.status === 'approved' ? 'Refund Approved' :
+                                     'Refund Denied'}
+                                  </span>
+                                </div>
+                                <div className="text-muted-foreground">
+                                  {formatDate(refundRequest.createdAt)}
+                                </div>
+                                {refundRequest.adminNotes && (
+                                  <div className="text-muted-foreground mt-1 text-xs">
+                                    Note: {refundRequest.adminNotes}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          }
+                          return <span className="text-muted-foreground text-sm">-</span>
+                        })()}
+                      </TableCell>
+                      <TableCell>
+                        {canRequestRefund(transaction) ? (
+                          <Dialog open={refundDialogOpen} onOpenChange={setRefundDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedTransaction(transaction)}
+                              >
+                                <RotateCcw className="h-3 w-3 mr-1" />
+                                Request Refund
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Request Refund</DialogTitle>
+                                <DialogDescription>
+                                  Request a refund for transaction {selectedTransaction?.id}
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div>
+                                  <Label htmlFor="reason">Reason for refund</Label>
+                                  <Textarea
+                                    id="reason"
+                                    placeholder="Please explain why you need a refund..."
+                                    value={refundReason}
+                                    onChange={(e) => setRefundReason(e.target.value)}
+                                    rows={4}
+                                  />
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setRefundDialogOpen(false)
+                                    setRefundReason("")
+                                    setSelectedTransaction(null)
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  onClick={handleRefundRequest}
+                                  disabled={!refundReason.trim() || submittingRefund}
+                                >
+                                  {submittingRefund ? 'Submitting...' : 'Submit Request'}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
                         ) : (
                           <span className="text-muted-foreground text-sm">-</span>
                         )}

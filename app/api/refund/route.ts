@@ -4,6 +4,13 @@ import { base, baseSepolia } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'
 import { getTransactionById, processRefund } from '@/lib/transactions'
 import { getNetworkConfig, NetworkType } from '@/lib/networks'
+import { 
+  createRefundRequest, 
+  getAllRefundRequests, 
+  getRefundRequestsByBuyer,
+  updateRefundStatus,
+  getRefundRequestById 
+} from '@/lib/refunds'
 
 const USDC_ADDRESS_SEPOLIA = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
 const USDC_ADDRESS_MAINNET = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
@@ -56,22 +63,170 @@ const getWalletClientForNetwork = (network: NetworkType) => {
   })
 }
 
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const buyerAddress = searchParams.get('buyer')
+    const adminView = searchParams.get('admin') === 'true'
+    
+    if (adminView) {
+      // Admin view - get all refund requests
+      const refundRequests = await getAllRefundRequests()
+      return NextResponse.json({ refundRequests })
+    } else if (buyerAddress) {
+      // Buyer view - get refund requests for specific buyer
+      const refundRequests = await getRefundRequestsByBuyer(buyerAddress)
+      return NextResponse.json({ refundRequests })
+    } else {
+      return NextResponse.json(
+        { error: 'Missing buyer address or admin flag' },
+        { status: 400 }
+      )
+    }
+  } catch (error) {
+    console.error('Error fetching refund requests:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch refund requests' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { transactionId, buyerAddress, network = 'sepolia' } = await request.json()
+    const { transactionId, reason } = await request.json()
     
     // Validate required fields
-    if (!transactionId || !buyerAddress) {
+    if (!transactionId || !reason) {
       return NextResponse.json(
-        { error: 'Missing required fields: transactionId, buyerAddress' },
+        { error: 'Missing required fields: transactionId, reason' },
         { status: 400 }
       )
     }
     
-    // Validate network
-    if (!['mainnet', 'sepolia'].includes(network)) {
+    // Get buyer wallet from request headers
+    const buyerWallet = request.headers.get('x-wallet-address')
+    if (!buyerWallet) {
       return NextResponse.json(
-        { error: 'Invalid network. Must be mainnet or sepolia' },
+        { error: 'Buyer wallet address required' },
+        { status: 401 }
+      )
+    }
+    
+    // Get transaction details
+    const transaction = await getTransactionById(transactionId)
+    if (!transaction) {
+      return NextResponse.json(
+        { error: 'Transaction not found' },
+        { status: 404 }
+      )
+    }
+    
+    // Verify buyer is the original payer
+    if (transaction.user.toLowerCase() !== buyerWallet.toLowerCase()) {
+      return NextResponse.json(
+        { error: 'Buyer address does not match transaction payer' },
+        { status: 400 }
+      )
+    }
+    
+    // Check if transaction is eligible for refund request
+    if (transaction.status === 'refunded') {
+      return NextResponse.json(
+        { error: 'Transaction has already been refunded' },
+        { status: 400 }
+      )
+    }
+    
+    if (transaction.status === 'pending') {
+      return NextResponse.json(
+        { error: 'Cannot request refund for pending transactions' },
+        { status: 400 }
+      )
+    }
+    
+    // Create refund request
+    const refundRequest = await createRefundRequest(transactionId, buyerWallet, reason)
+    
+    // Trigger notification for buyer about refund request submission
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'info',
+          category: 'refund',
+          title: 'Refund Request Submitted',
+          message: 'Your refund request has been submitted and is under review.',
+          autoDismiss: true,
+          dismissAfter: 5000,
+        }),
+      });
+    } catch (notificationError) {
+      console.error('Failed to send buyer notification:', notificationError);
+    }
+    
+    // Trigger notification for admin about new refund request
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'warning',
+          category: 'admin',
+          title: 'New Refund Request',
+          message: `Refund requested for transaction ${transactionId} by ${buyerWallet.slice(0, 6)}...${buyerWallet.slice(-4)}`,
+          autoDismiss: false,
+        }),
+      });
+    } catch (notificationError) {
+      console.error('Failed to send admin notification:', notificationError);
+    }
+    
+    return NextResponse.json({
+      success: true,
+      refundRequest
+    })
+    
+  } catch (error) {
+    console.error('Refund request error:', error)
+    
+    if (error instanceof Error) {
+      if (error.message.includes('already exists')) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 400 }
+        )
+      }
+    }
+    
+    return NextResponse.json(
+      { error: 'Failed to create refund request' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const { refundId, action, adminNotes, network = 'sepolia' } = await request.json()
+    
+    // Validate required fields
+    if (!refundId || !action) {
+      return NextResponse.json(
+        { error: 'Missing required fields: refundId, action' },
+        { status: 400 }
+      )
+    }
+    
+    // Validate action
+    if (!['approve', 'deny'].includes(action)) {
+      return NextResponse.json(
+        { error: 'Invalid action. Must be approve or deny' },
         { status: 400 }
       )
     }
@@ -85,51 +240,55 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Allow any wallet to process refunds (removed admin restriction)
-    // Note: In production, you may want to add back admin verification
-    
-    // Get transaction details
-    const transaction = await getTransactionById(transactionId)
-    if (!transaction) {
+    // Get refund request
+    const refundRequest = await getRefundRequestById(refundId)
+    if (!refundRequest) {
       return NextResponse.json(
-        { error: 'Transaction not found' },
+        { error: 'Refund request not found' },
         { status: 404 }
       )
     }
     
-    // Verify buyer is the original payer
-    if (transaction.user.toLowerCase() !== buyerAddress.toLowerCase()) {
+    // Check if already processed
+    if (refundRequest.status !== 'pending') {
       return NextResponse.json(
-        { error: 'Buyer address does not match transaction payer' },
+        { error: 'Refund request has already been processed' },
         { status: 400 }
       )
     }
     
-    // Only allow refunds for USDC transactions (ETH refunds would require different logic)
-    if (transaction.currency !== 'USDC') {
+    const newStatus = action === 'approve' ? 'approved' : 'denied'
+    
+    // Update refund request status
+    const updatedRefundRequest = await updateRefundStatus(
+      refundId,
+      newStatus,
+      adminWallet,
+      adminNotes
+    )
+    
+    if (!updatedRefundRequest) {
       return NextResponse.json(
-        { error: 'Only USDC transactions can be refunded through this endpoint' },
-        { status: 400 }
+        { error: 'Failed to update refund request' },
+        { status: 500 }
       )
     }
     
-    // Check if transaction is eligible for refund
-    if (transaction.status === 'refunded') {
-      return NextResponse.json(
-        { error: 'Transaction has already been refunded' },
-        { status: 400 }
-      )
-    }
-    
-    if (transaction.status === 'pending') {
-      return NextResponse.json(
-        { error: 'Cannot refund pending transactions' },
-        { status: 400 }
-      )
+    // If approved, process the actual refund
+    if (action === 'approve') {
+      try {
+        // Get transaction details
+        const transaction = await getTransactionById(refundRequest.transactionId)
+        if (!transaction) {
+          throw new Error('Transaction not found')
+        }
+        
+        // Only process USDC refunds for now
+        if (transaction.currency !== 'USDC') {
+          throw new Error('Only USDC transactions can be refunded through this endpoint')
     }
     
     // Get network configuration
-    const networkConfig = getNetworkConfig(network as NetworkType)
     const usdcAddress = getUsdcAddress(network as NetworkType)
     
     // Create clients
@@ -147,10 +306,7 @@ export async function POST(request: NextRequest) {
     const refundAmount = parseUnits(transaction.amount.toString(), USDC_DECIMALS)
     
     if (adminBalance < refundAmount) {
-      return NextResponse.json(
-        { error: 'Insufficient USDC balance in admin wallet for refund' },
-        { status: 400 }
-      )
+          throw new Error('Insufficient USDC balance in admin wallet for refund')
     }
     
     // Send USDC refund
@@ -158,7 +314,7 @@ export async function POST(request: NextRequest) {
       address: usdcAddress as `0x${string}`,
       abi: USDC_ABI,
       functionName: 'transfer',
-      args: [buyerAddress as `0x${string}`, refundAmount]
+          args: [refundRequest.buyer as `0x${string}`, refundAmount]
     })
     
     // Wait for transaction confirmation
@@ -168,24 +324,18 @@ export async function POST(request: NextRequest) {
     })
     
     if (receipt.status !== 'success') {
-      return NextResponse.json(
-        { error: 'Refund transaction failed' },
-        { status: 500 }
-      )
+          throw new Error('Refund transaction failed')
     }
     
     // Update transaction status in database
     const updatedTransaction = await processRefund(
-      transactionId,
+          refundRequest.transactionId,
       refundTxHash,
       adminWallet
     )
     
     if (!updatedTransaction) {
-      return NextResponse.json(
-        { error: 'Failed to update transaction status' },
-        { status: 500 }
-      )
+          throw new Error('Failed to update transaction status')
     }
 
     // Trigger notification for successful refund
@@ -199,7 +349,7 @@ export async function POST(request: NextRequest) {
           type: 'success',
           category: 'refund',
           title: 'Refund Processed',
-          message: '💸 Refund processed successfully.',
+              message: `💸 Refund of ${transaction.amount} ${transaction.currency} processed successfully for ${refundRequest.buyer.slice(0, 6)}...${refundRequest.buyer.slice(-4)}`,
           autoDismiss: true,
           dismissAfter: 5000,
         }),
@@ -210,33 +360,55 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
+          refundRequest: updatedRefundRequest,
       refundTxHash,
-      refundAmount: transaction.amount,
-      currency: transaction.currency,
       transaction: updatedTransaction
     })
     
-  } catch (error) {
-    console.error('Refund error:', error)
-    
-    // Handle specific error types
-    if (error instanceof Error) {
-      if (error.message.includes('insufficient funds')) {
+      } catch (refundError) {
+        console.error('Refund processing error:', refundError)
+        
+        // Revert refund request status if refund failed
+        await updateRefundStatus(refundId, 'pending', adminWallet, `Refund failed: ${refundError instanceof Error ? refundError.message : 'Unknown error'}`)
+        
         return NextResponse.json(
-          { error: 'Insufficient funds for refund transaction' },
-          { status: 400 }
+          { error: `Refund processing failed: ${refundError instanceof Error ? refundError.message : 'Unknown error'}` },
+          { status: 500 }
         )
       }
-      if (error.message.includes('user rejected')) {
-        return NextResponse.json(
-          { error: 'Transaction rejected by user' },
-          { status: 400 }
-        )
+    } else {
+      // Refund denied - just update status
+      // Trigger notification for denied refund
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'warning',
+            category: 'refund',
+            title: 'Refund Request Denied',
+            message: `Refund request denied for ${refundRequest.buyer.slice(0, 6)}...${refundRequest.buyer.slice(-4)}`,
+            autoDismiss: true,
+            dismissAfter: 7000,
+          }),
+        });
+      } catch (notificationError) {
+        console.error('Failed to send refund denial notification:', notificationError);
       }
+      
+      return NextResponse.json({
+        success: true,
+        refundRequest: updatedRefundRequest
+      })
     }
     
+  } catch (error) {
+    console.error('Refund processing error:', error)
+    
     return NextResponse.json(
-      { error: 'Failed to process refund' },
+      { error: 'Failed to process refund request' },
       { status: 500 }
     )
   }

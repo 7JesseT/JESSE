@@ -310,15 +310,15 @@ export default function AdminHome() {
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              📈 Analytics
+              🔄 Refunds
             </CardTitle>
             <CardDescription>
-              View detailed analytics and reports
+              Manage refund requests and process approvals
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href="/admin/dashboard">
-              <Button className="w-full">View Analytics</Button>
+            <Link href="/admin/refunds">
+              <Button className="w-full">Manage Refunds</Button>
             </Link>
           </CardContent>
         </Card>
