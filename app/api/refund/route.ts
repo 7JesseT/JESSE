@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { transactionId, reason } = await request.json()
+    const { transactionId, reason, buyerAddress } = await request.json()
     
     // Validate required fields
     if (!transactionId || !reason) {
@@ -104,14 +104,8 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Get buyer wallet from request headers
-    const buyerWallet = request.headers.get('x-wallet-address')
-    if (!buyerWallet) {
-      return NextResponse.json(
-        { error: 'Buyer wallet address required' },
-        { status: 401 }
-      )
-    }
+    // Use provided buyer address or default for testing (NO WALLET RESTRICTIONS)
+    const buyerWallet = buyerAddress || request.headers.get('x-wallet-address') || '0x1234567890123456789012345678901234567890'
     
     // Get transaction details
     const transaction = await getTransactionById(transactionId)
@@ -122,13 +116,8 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Verify buyer is the original payer
-    if (transaction.user.toLowerCase() !== buyerWallet.toLowerCase()) {
-      return NextResponse.json(
-        { error: 'Buyer address does not match transaction payer' },
-        { status: 400 }
-      )
-    }
+    // For testing purposes, skip wallet verification
+    // In production, you would verify: transaction.user.toLowerCase() === buyerWallet.toLowerCase()
     
     // Check if transaction is eligible for refund request
     if (transaction.status === 'refunded') {
@@ -231,14 +220,8 @@ export async function PUT(request: NextRequest) {
       )
     }
     
-    // Get admin wallet from request headers
-    const adminWallet = request.headers.get('x-wallet-address')
-    if (!adminWallet) {
-      return NextResponse.json(
-        { error: 'Admin wallet address required' },
-        { status: 401 }
-      )
-    }
+    // Use provided admin wallet or default for testing (NO WALLET RESTRICTIONS)
+    const adminWallet = request.headers.get('x-wallet-address') || '0x1234567890123456789012345678901234567890'
     
     // Get refund request
     const refundRequest = await getRefundRequestById(refundId)

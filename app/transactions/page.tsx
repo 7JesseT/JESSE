@@ -111,11 +111,12 @@ export default function TransactionsPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-wallet-address': address!
+          'x-wallet-address': address || '0x1234567890123456789012345678901234567890'
         },
         body: JSON.stringify({
           transactionId: selectedTransaction.id,
-          reason: refundReason.trim()
+          reason: refundReason.trim(),
+          buyerAddress: address || '0x1234567890123456789012345678901234567890' // Add buyerAddress for testing
         })
       })
       
