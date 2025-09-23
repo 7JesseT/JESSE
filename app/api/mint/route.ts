@@ -16,6 +16,24 @@ const erc1155Abi = parseAbi([
   "function uri(uint256 id) external view returns (string)",
 ])
 
+export async function GET() {
+  try {
+    // Read mints.json
+    let mints: any[] = []
+    try {
+      const raw = await fs.readFile(MINTS_PATH, "utf-8")
+      mints = JSON.parse(raw)
+    } catch {
+      mints = []
+    }
+
+    return NextResponse.json({ mints })
+  } catch (error) {
+    console.error("Error reading mints:", error)
+    return NextResponse.json({ error: "Failed to read mints" }, { status: 500 })
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { to, tokenId, amount, event = "week1" } = await request.json()

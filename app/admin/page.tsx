@@ -322,6 +322,22 @@ export default function AdminHome() {
             </Link>
           </CardContent>
         </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              📊 Analytics
+            </CardTitle>
+            <CardDescription>
+              View comprehensive analytics and insights
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/admin/analytics">
+              <Button className="w-full">View Analytics</Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

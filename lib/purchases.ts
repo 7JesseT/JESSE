@@ -47,6 +47,11 @@ export async function getPurchasesByBuyer(buyer: string): Promise<Purchase[]> {
   return data.purchases.filter(purchase => purchase.buyer.toLowerCase() === buyer.toLowerCase());
 }
 
+export async function getAllPurchases(): Promise<Purchase[]> {
+  const data = await readPurchasesData();
+  return data.purchases;
+}
+
 export async function isTokenValid(token: string): Promise<boolean> {
   const purchase = await getPurchaseByToken(token);
   if (!purchase) return false;
