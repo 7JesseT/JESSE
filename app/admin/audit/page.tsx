@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, Download, Search, Filter, Eye, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { isAdminWallet } from '@/lib/admin-auth';
 import { toast } from '@/hooks/use-toast';
 
 interface AuditEvent {
@@ -34,6 +35,8 @@ interface AuditResponse {
 
 export default function AdminAuditPage() {
   const { address, isConnected } = useAccount();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [auditData, setAuditData] = useState<AuditResponse | null>(null);
   const [eventTypes, setEventTypes] = useState<string[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null);
@@ -47,11 +50,37 @@ export default function AdminAuditPage() {
   
   const ITEMS_PER_PAGE = 50;
 
-  // Load audit data immediately (no auth required)
+  // Check authorization
   useEffect(() => {
-    loadAuditData();
-    loadEventTypes();
-  }, [fromDate, toDate, selectedType, searchQuery, currentPage]);
+    const checkAuth = async () => {
+      if (!isConnected || !address) {
+        setIsAuthorized(false);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/admin/check?wallet=${address}`);
+        const data = await response.json();
+        setIsAuthorized(data.isAdmin);
+      } catch (error) {
+        console.error('Admin check failed:', error);
+        setIsAuthorized(false);
+      }
+      
+      setIsLoading(false);
+    };
+
+    checkAuth();
+  }, [isConnected, address]);
+
+  // Load audit data
+  useEffect(() => {
+    if (isAuthorized) {
+      loadAuditData();
+      loadEventTypes();
+    }
+  }, [isAuthorized, fromDate, toDate, selectedType, searchQuery, currentPage]);
 
   const loadAuditData = async () => {
     try {
@@ -204,6 +233,29 @@ export default function AdminAuditPage() {
     setSearchQuery('');
     setCurrentPage(0);
   };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-lg">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Alert variant="destructive">
+          <Shield className="h-4 w-4" />
+          <AlertDescription>
+            Admin access required. Please connect with an authorized wallet.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
