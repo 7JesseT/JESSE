@@ -55,7 +55,7 @@
       "transactionId": "tx-789",
       "newStatus": "shipped",
       "previousStatus": "confirmed",
-      "amount": 15.50,
+      "amount": 15.5,
       "currency": "USDC"
     },
     "metadata": "Transaction status changed from confirmed to shipped for transaction tx-789",
@@ -92,5 +92,33 @@
     },
     "metadata": "File upload: Product Documentation (2.00 MB)",
     "timestamp": "2024-09-24T15:15:00.000Z"
+  },
+  {
+    "type": "login",
+    "actor": "0x29E2481F55Ac8fb3f7c223E018688D98a514fCca",
+    "user": "0x29E2481F55Ac8fb3f7c223E018688D98a514fCca",
+    "details": {
+      "walletAddress": "0x29E2481F55Ac8fb3f7c223E018688D98a514fCca",
+      "connectorName": "MetaMask",
+      "connectorId": "metaMaskSDK"
+    },
+    "metadata": "Wallet connected: 0x29E2481F55Ac8fb3f7c223E018688D98a514fCca via MetaMask",
+    "ip": "::1",
+    "id": "4391154c-f7d8-4d2d-b537-a519a2a730b1",
+    "timestamp": "2025-09-24T09:43:02.511Z"
+  },
+  {
+    "type": "login",
+    "actor": "0x29E2481F55Ac8fb3f7c223E018688D98a514fCca",
+    "user": "0x29E2481F55Ac8fb3f7c223E018688D98a514fCca",
+    "details": {
+      "walletAddress": "0x29E2481F55Ac8fb3f7c223E018688D98a514fCca",
+      "connectorName": "MetaMask",
+      "connectorId": "metaMaskSDK"
+    },
+    "metadata": "Wallet connected: 0x29E2481F55Ac8fb3f7c223E018688D98a514fCca via MetaMask",
+    "ip": "::1",
+    "id": "b9d29abd-98be-4c76-9eb2-c6e6827af9b7",
+    "timestamp": "2025-09-24T10:12:12.263Z"
   }
 ]

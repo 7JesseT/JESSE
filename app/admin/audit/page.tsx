@@ -41,7 +41,7 @@ export default function AdminAuditPage() {
   // Filter states
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-  const [selectedType, setSelectedType] = useState('');
+  const [selectedType, setSelectedType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   
@@ -58,7 +58,7 @@ export default function AdminAuditPage() {
       const params = new URLSearchParams();
       if (fromDate) params.set('from', fromDate);
       if (toDate) params.set('to', toDate);
-      if (selectedType) params.set('type', selectedType);
+      if (selectedType && selectedType !== 'all') params.set('type', selectedType);
       if (searchQuery) params.set('q', searchQuery);
       params.set('limit', ITEMS_PER_PAGE.toString());
       params.set('offset', (currentPage * ITEMS_PER_PAGE).toString());
@@ -200,7 +200,7 @@ export default function AdminAuditPage() {
   const resetFilters = () => {
     setFromDate('');
     setToDate('');
-    setSelectedType('');
+    setSelectedType('all');
     setSearchQuery('');
     setCurrentPage(0);
   };
@@ -247,7 +247,7 @@ export default function AdminAuditPage() {
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All types</SelectItem>
+                  <SelectItem value="all">All types</SelectItem>
                   {eventTypes.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type}
