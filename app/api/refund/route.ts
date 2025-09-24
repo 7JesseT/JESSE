@@ -137,6 +137,31 @@ export async function POST(request: NextRequest) {
     // Create refund request
     const refundRequest = await createRefundRequest(transactionId, buyerWallet, reason)
     
+    // Create audit log for refund request
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/audit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'refund_request',
+          actor: buyerWallet,
+          user: buyerWallet,
+          details: {
+            refundId: refundRequest.id,
+            transactionId,
+            reason,
+            amount: transaction.amount,
+            currency: transaction.currency
+          },
+          metadata: `Refund request for transaction ${transactionId}: ${reason}`
+        })
+      });
+    } catch (auditError) {
+      console.error('Failed to create audit log:', auditError);
+    }
+    
     // Trigger notification for buyer about refund request submission
     try {
       await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications`, {
@@ -319,6 +344,32 @@ export async function PUT(request: NextRequest) {
     
     if (!updatedTransaction) {
           throw new Error('Failed to update transaction status')
+    }
+
+    // Create audit log for refund processed
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/audit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'refund_processed',
+          actor: adminWallet,
+          user: refundRequest.buyer,
+          details: {
+            refundId,
+            transactionId: refundRequest.transactionId,
+            refundTxHash,
+            amount: transaction.amount,
+            currency: transaction.currency,
+            adminNotes
+          },
+          metadata: `Refund processed: ${transaction.amount} ${transaction.currency} to ${refundRequest.buyer}`
+        })
+      });
+    } catch (auditError) {
+      console.error('Failed to create audit log:', auditError);
     }
 
     // Trigger notification for successful refund

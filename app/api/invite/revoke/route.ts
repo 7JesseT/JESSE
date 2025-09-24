@@ -16,6 +16,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invite not found' }, { status: 404 })
     }
 
+    // Create audit log for invite revocation
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/audit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'admin',
+          actor: 'admin', // Invite revocation is admin-only
+          details: {
+            action: 'revoke_invite',
+            inviteToken: token
+          },
+          metadata: `Invite revoked: ${token}`
+        })
+      });
+    } catch (auditError) {
+      console.error('Failed to create audit log:', auditError);
+    }
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error revoking invite:', error)

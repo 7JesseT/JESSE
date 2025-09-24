@@ -46,6 +46,138 @@ NEXT_PUBLIC_DEFAULT_NETWORK=sepolia
 NEXT_PUBLIC_RPC_URL=https://sepolia.base.org
 ```
 
+## Audit Logs (Day 24)
+
+### Overview
+The audit logging system provides comprehensive tracking of all important events in the application. It records all payments, mints, refunds, uploads, admin actions, invite usage, and login/connect events to an append-only audit log.
+
+### Features
+- **Comprehensive Event Tracking**: Records payments, mints, refunds, uploads, admin actions, invites, and logins
+- **Admin Dashboard**: View, filter, search, and export audit logs through `/admin/audit`
+- **CSV Export**: Export filtered audit logs or full audit history as CSV
+- **Real-time Monitoring**: Events are logged immediately when they occur
+- **Secure Storage**: Uses atomic file writes to prevent data corruption
+- **Privacy Protection**: Automatically sanitizes sensitive data like private keys
+
+### Event Types
+- `payment`: TipJar payment transactions
+- `mint`: Regular NFT mints
+- `special-mint`: Special NFT reward mints
+- `refund_request`: Refund requests submitted by users
+- `refund_processed`: Refunds approved and processed by admins
+- `upload`: File uploads by admins
+- `invite`: Invite creation by admins
+- `invite_use`: Invite usage by users
+- `admin`: Admin actions (status changes, revocations)
+- `login`: Wallet connections/logins
+
+### Storage
+For development and demo purposes, audit logs are stored in a local JSON file at `/data/audit-logs.json`. This provides:
+- **Simplicity**: No database required for development
+- **Portability**: Easy to backup and inspect logs
+- **Atomic Writes**: Uses temporary files and rename operations for data integrity
+
+**Production Note**: For production deployments, especially on platforms like Vercel with ephemeral filesystems, consider migrating to a persistent database or external storage like S3 with encryption.
+
+### Admin Interface
+Access the audit dashboard at `/admin/audit` (requires admin authentication):
+- **Table View**: Browse audit events with pagination
+- **Filtering**: Filter by date range, event type, and search across all fields
+- **Event Details**: Click any event to view full JSON details
+- **CSV Export**: Export visible results or full audit history
+- **Real-time Updates**: Refresh to see latest events
+
+### API Endpoints
+
+#### POST /api/audit
+Create a new audit event:
+```bash
+curl -X POST http://localhost:3000/api/audit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "test",
+    "actor": "0x1234567890123456789012345678901234567890",
+    "details": {"note": "Test event"},
+    "metadata": "Test audit event"
+  }'
+```
+
+#### GET /api/admin/audit
+Retrieve audit events with filtering:
+```bash
+# Get recent audit events
+curl "http://localhost:3000/api/admin/audit?limit=10"
+
+# Filter by date range and type
+curl "http://localhost:3000/api/admin/audit?from=2024-01-01&to=2024-12-31&type=payment"
+
+# Search across all fields
+curl "http://localhost:3000/api/admin/audit?q=refund"
+
+# Export as CSV
+curl "http://localhost:3000/api/admin/audit?format=csv" > audit-logs.csv
+```
+
+### Integration Examples
+The audit system is automatically integrated throughout the application:
+
+**TipJar Payments**:
+```javascript
+// Automatically logged after successful payment
+{
+  type: 'payment',
+  actor: walletAddress,
+  user: recipientAddress,
+  details: {
+    txHash: '0x...',
+    amount: 1.5,
+    currency: 'ETH',
+    recipientId: 'env-club'
+  }
+}
+```
+
+**NFT Mints**:
+```javascript
+// Logged after successful mint
+{
+  type: 'mint',
+  actor: minterAddress,
+  user: recipientAddress,
+  details: {
+    txHash: '0x...',
+    tokenId: '1',
+    event: 'week1'
+  }
+}
+```
+
+**Admin Actions**:
+```javascript
+// Logged when admin changes transaction status
+{
+  type: 'admin',
+  actor: adminWallet,
+  user: customerWallet,
+  details: {
+    action: 'status_change',
+    transactionId: 'tx123',
+    newStatus: 'shipped'
+  }
+}
+```
+
+### Development Setup
+1. **Automatic Creation**: The audit system automatically creates the `/data` directory and `audit-logs.json` file
+2. **No Configuration**: Works out of the box with no additional setup
+3. **Sample Data**: Use the sample cURL commands above to create test audit events
+
+### Monitoring & Maintenance
+- **File Size**: Monitor the audit log file size in production
+- **Rotation**: Consider implementing log rotation for long-running applications
+- **Backup**: Regularly backup audit logs for compliance and disaster recovery
+- **Encryption**: Add encryption for sensitive production environments
+
 ### Testing Mainnet Safely
 
 #### Setup
@@ -1148,5 +1280,6 @@ data/
 - [ ] Download URLs expire as expected
 - [ ] Fallback works when S3 is disabled
 - [ ] Demo mode works with S3 enabled
-#   V I P   B y p a s s   M o d e   E n a b l e d  
+#   V I P   B y p a s s   M o d e   E n a b l e d 
+ 
  

@@ -338,6 +338,22 @@ export default function AdminHome() {
             </Link>
           </CardContent>
         </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              📋 Audit Logs
+            </CardTitle>
+            <CardDescription>
+              Monitor system activities and security events
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/admin/audit">
+              <Button className="w-full">View Audit Logs</Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

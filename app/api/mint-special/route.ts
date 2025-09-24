@@ -77,6 +77,31 @@ export async function POST(request: NextRequest) {
 
     console.log(`Special NFT Mint Success - Wallet: ${to}, TX: ${hash}, Block: ${receipt.blockNumber}`)
 
+    // Create audit log for special mint
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/audit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'special-mint',
+          actor: account.address,
+          user: to,
+          details: {
+            txHash: hash,
+            tokenId: tokenId.toString(),
+            amount: amount.toString(),
+            event: 'special',
+            contractAddress: ATTENDANCE_CONTRACT
+          },
+          metadata: `Special NFT mint: token ${tokenId} to ${to}`
+        })
+      });
+    } catch (auditError) {
+      console.error('Failed to create audit log:', auditError);
+    }
+
     return NextResponse.json({
       success: true,
       txHash: hash,

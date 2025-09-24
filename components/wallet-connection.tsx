@@ -52,6 +52,32 @@ export function WalletConnection() {
     }
   }, [connectError])
 
+  // Log wallet connections
+  useEffect(() => {
+    if (isConnected && address) {
+      // Create audit log for wallet login
+      fetch('/api/audit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'login',
+          actor: address,
+          user: address,
+          details: {
+            walletAddress: address,
+            connectorName: connector?.name || 'unknown',
+            connectorId: connector?.id || 'unknown'
+          },
+          metadata: `Wallet connected: ${address} via ${connector?.name || 'unknown'}`
+        })
+      }).catch(error => {
+        console.error('Failed to create login audit log:', error);
+      });
+    }
+  }, [isConnected, address, connector])
+
   const handleConnectMetaMask = async () => {
     setConnectionError("")
     const metaMaskConnector = connectors.find(c => c.id === "metaMask")

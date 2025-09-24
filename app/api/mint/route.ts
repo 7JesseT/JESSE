@@ -107,6 +107,31 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Create audit log for mint
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/audit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'mint',
+          actor: account.address,
+          user: to,
+          details: {
+            txHash: hash,
+            tokenId: tokenId.toString(),
+            amount: amount.toString(),
+            event,
+            contractAddress: ATTENDANCE_CONTRACT
+          },
+          metadata: `NFT mint: token ${tokenId} to ${to} for event ${event}`
+        })
+      });
+    } catch (auditError) {
+      console.error('Failed to create audit log:', auditError);
+    }
+
     // Trigger notification for successful mint
     try {
       await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications`, {

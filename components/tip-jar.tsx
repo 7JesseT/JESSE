@@ -218,6 +218,31 @@ export function TipJar() {
       
       console.log(`TipJar Payment Success - Wallet: ${address}, Amount: ${numericAmount} ${currency}, TX: ${hash}`)
       
+      // Create audit log for payment
+      try {
+        await fetch('/api/audit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'payment',
+            actor: address,
+            user: recipientAddress,
+            details: {
+              txHash: hash,
+              amount: numericAmount,
+              currency,
+              recipientId: selectedRecipientId,
+              recipientName: selectedRecipient?.name
+            },
+            metadata: `TipJar payment: ${numericAmount} ${currency} to ${selectedRecipient?.name}`
+          })
+        })
+      } catch (error) {
+        console.error('Failed to create audit log:', error)
+      }
+      
       if (randomChance < rewardThreshold && address) {
         console.log(`Random Reward Triggered - Wallet: ${address}, Chance: ${randomChance.toFixed(3)}`)
         

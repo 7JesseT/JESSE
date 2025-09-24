@@ -23,6 +23,30 @@ export async function POST(request: NextRequest) {
       expiryAt
     })
 
+    // Create audit log for invite creation
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/audit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'invite',
+          actor: 'admin', // Invite creation is admin-only
+          details: {
+            inviteToken: result.token,
+            recipientId,
+            currency,
+            amount,
+            expiryAt: expiryAt.toISOString()
+          },
+          metadata: `Invite created: ${amount} ${currency} for ${recipientId}, expires ${expiryAt.toISOString()}`
+        })
+      });
+    } catch (auditError) {
+      console.error('Failed to create audit log:', auditError);
+    }
+
     return NextResponse.json(result)
   } catch (error) {
     console.error('Error creating invite:', error)

@@ -1,0 +1,96 @@
+[
+  {
+    "id": "sample-1",
+    "type": "payment",
+    "actor": "0x1234567890123456789012345678901234567890",
+    "user": "0x9876543210987654321098765432109876543210",
+    "details": {
+      "txHash": "0xabc123def456789",
+      "amount": 1.5,
+      "currency": "ETH",
+      "recipientId": "env-club",
+      "recipientName": "Env Club"
+    },
+    "metadata": "TipJar payment: 1.5 ETH to Env Club",
+    "timestamp": "2024-09-24T10:30:00.000Z",
+    "ip": "192.168.1.100"
+  },
+  {
+    "id": "sample-2",
+    "type": "mint",
+    "actor": "0x5555666677778888999900001111222233334444",
+    "user": "0x1234567890123456789012345678901234567890",
+    "details": {
+      "txHash": "0xdef789abc123456",
+      "tokenId": "1",
+      "amount": "1",
+      "event": "week1",
+      "contractAddress": "0x1111222233334444555566667777888899990000"
+    },
+    "metadata": "NFT mint: token 1 to 0x1234567890123456789012345678901234567890 for event week1",
+    "timestamp": "2024-09-24T11:15:00.000Z"
+  },
+  {
+    "id": "sample-3",
+    "type": "refund_request",
+    "actor": "0x1234567890123456789012345678901234567890",
+    "user": "0x1234567890123456789012345678901234567890",
+    "details": {
+      "refundId": "refund-123",
+      "transactionId": "tx-456",
+      "reason": "Product not as described",
+      "amount": 25.99,
+      "currency": "USDC"
+    },
+    "metadata": "Refund request for transaction tx-456: Product not as described",
+    "timestamp": "2024-09-24T12:00:00.000Z"
+  },
+  {
+    "id": "sample-4",
+    "type": "admin",
+    "actor": "0x9999888877776666555544443333222211110000",
+    "user": "0x1234567890123456789012345678901234567890",
+    "details": {
+      "action": "status_change",
+      "transactionId": "tx-789",
+      "newStatus": "shipped",
+      "previousStatus": "confirmed",
+      "amount": 15.50,
+      "currency": "USDC"
+    },
+    "metadata": "Transaction status changed from confirmed to shipped for transaction tx-789",
+    "timestamp": "2024-09-24T13:30:00.000Z"
+  },
+  {
+    "id": "sample-5",
+    "type": "login",
+    "actor": "0x2222333344445555666677778888999900001111",
+    "user": "0x2222333344445555666677778888999900001111",
+    "details": {
+      "walletAddress": "0x2222333344445555666677778888999900001111",
+      "connectorName": "MetaMask",
+      "connectorId": "metaMask"
+    },
+    "metadata": "Wallet connected: 0x2222333344445555666677778888999900001111 via MetaMask",
+    "timestamp": "2024-09-24T14:00:00.000Z"
+  },
+  {
+    "id": "sample-6",
+    "type": "upload",
+    "actor": "admin",
+    "details": {
+      "fileId": "file-abc123",
+      "filename": "sample-document.pdf",
+      "title": "Product Documentation",
+      "size": 2048576,
+      "type": "application/pdf",
+      "priceUsd": 9.99,
+      "recipient": "0x9999888877776666555544443333222211110000",
+      "isFree": false,
+      "storageMethod": "local",
+      "s3Key": null
+    },
+    "metadata": "File upload: Product Documentation (2.00 MB)",
+    "timestamp": "2024-09-24T15:15:00.000Z"
+  }
+]

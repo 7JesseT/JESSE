@@ -93,6 +93,35 @@ export async function POST(request: NextRequest) {
     // Save metadata
     await addFile(fileMetadata);
 
+    // Create audit log for file upload
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/audit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'upload',
+          actor: 'admin', // File uploads are typically admin-only
+          details: {
+            fileId: fileMetadata.id,
+            filename: fileMetadata.filename,
+            title: fileMetadata.title,
+            size: buffer.length,
+            type: file.type,
+            priceUsd: fileMetadata.priceUsd,
+            recipient: fileMetadata.recipient,
+            isFree: fileMetadata.isFree,
+            storageMethod,
+            s3Key: s3Key || null
+          },
+          metadata: `File upload: ${fileMetadata.title} (${(buffer.length / 1024 / 1024).toFixed(2)} MB)`
+        })
+      });
+    } catch (auditError) {
+      console.error('Failed to create audit log:', auditError);
+    }
+
     return NextResponse.json({
       success: true,
       file: fileMetadata,

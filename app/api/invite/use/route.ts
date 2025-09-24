@@ -24,6 +24,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invite not found, already used, or expired' }, { status: 400 })
     }
 
+    // Create audit log for invite usage
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/audit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'invite_use',
+          actor: walletAddress,
+          user: walletAddress,
+          details: {
+            inviteToken: token,
+            txHash,
+            walletAddress
+          },
+          metadata: `Invite used by ${walletAddress} with transaction ${txHash}`
+        })
+      });
+    } catch (auditError) {
+      console.error('Failed to create audit log:', auditError);
+    }
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error using invite:', error)
