@@ -3,7 +3,7 @@ export interface Transaction {
   user: string // wallet address
   amount: number
   currency: 'ETH' | 'USDC'
-  type: 'tip' | 'nft_mint' | 'file_purchase' | 'special_reward'
+  type: 'tip' | 'nft_mint' | 'nft_purchase' | 'file_purchase' | 'special_reward'
   status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'refunded'
   timestamp: string
   txHash?: string // blockchain transaction hash
@@ -14,7 +14,9 @@ export interface Transaction {
     recipientId?: string // for tips
     fileId?: string // for file purchases
     event?: string // for NFT mints
-    tokenId?: string // for NFT mints
+    tokenId?: string // for NFT mints/purchases
+    contractAddress?: string // for NFT purchases
+    tokenAmount?: number // for NFT purchases (quantity)
   }
 }
 

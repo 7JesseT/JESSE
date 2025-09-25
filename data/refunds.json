@@ -1,3 +1,31 @@
 {
-  "refunds": []
+  "refunds": [
+    {
+      "id": "refund-1",
+      "transactionId": "sample-6",
+      "buyer": "0x6789012345678901234567890123456789012345",
+      "reason": "Changed my mind about the VIP pass",
+      "status": "pending",
+      "createdAt": "2025-01-17T14:30:00Z"
+    },
+    {
+      "id": "refund-2", 
+      "transactionId": "sample-7",
+      "buyer": "0x7890123456789012345678901234567890123456",
+      "reason": "NFT doesn't work as expected",
+      "status": "pending",
+      "createdAt": "2025-01-17T15:45:00Z"
+    },
+    {
+      "id": "refund-3",
+      "transactionId": "sample-8", 
+      "buyer": "0x8901234567890123456789012345678901234567",
+      "reason": "Accidental purchase",
+      "status": "approved",
+      "createdAt": "2025-01-17T16:20:00Z",
+      "processedAt": "2025-01-17T17:30:00Z",
+      "processedBy": "0x1234567890123456789012345678901234567890",
+      "adminNotes": "Approved refund for accidental purchase. NFT will be burned and USDC returned."
+    }
+  ]
 }

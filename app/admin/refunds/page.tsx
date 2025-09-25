@@ -69,8 +69,8 @@ export default function AdminRefundsPage() {
     
     try {
       setProcessingRefund(selectedRefund.id);
-      const response = await fetch('/api/refund', {
-        method: 'PUT',
+      const response = await fetch('/api/process-refund', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-wallet-address': address || '0x1234567890123456789012345678901234567890' // Default for testing
@@ -89,7 +89,16 @@ export default function AdminRefundsPage() {
         setAdminNotes('');
         setSelectedRefund(null);
         await loadRefundData(); // Refresh data
-        alert(`Refund request ${action}d successfully!`);
+        
+        let message = `Refund request ${action}d successfully!`;
+        if (action === 'approve' && data.refundTxHash) {
+          message += `\nUSDC Refund TX: ${data.refundTxHash}`;
+        }
+        if (action === 'approve' && data.burnTxHash) {
+          message += `\nNFT Burn TX: ${data.burnTxHash}`;
+        }
+        
+        alert(message);
       } else {
         alert(data.error || `Failed to ${action} refund request`);
       }
@@ -187,6 +196,7 @@ export default function AdminRefundsPage() {
                   <TableRow>
                     <TableHead>ID</TableHead>
                     <TableHead>Transaction</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Buyer</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Reason</TableHead>
@@ -219,6 +229,11 @@ export default function AdminRefundsPage() {
                               </a>
                             )}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {transaction?.type || 'unknown'}
+                          </Badge>
                         </TableCell>
                         <TableCell className="font-mono text-sm">
                           {refund.buyer.slice(0, 6)}...{refund.buyer.slice(-4)}

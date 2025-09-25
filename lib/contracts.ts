@@ -3,6 +3,8 @@ import { parseAbi } from "viem"
 // ERC-1155 Contract ABI
 export const erc1155Abi = parseAbi([
   "function mint(address to, uint256 id, uint256 amount, bytes data) external",
+  "function burn(address from, uint256 id, uint256 amount) external",
+  "function burnBatch(address from, uint256[] memory ids, uint256[] memory amounts) external",
   "function uri(uint256 id) external view returns (string)",
   "function balanceOf(address account, uint256 id) external view returns (uint256)",
   "function setURI(string memory newuri) external",
