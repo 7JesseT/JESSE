@@ -84,7 +84,7 @@ function EvidenceUploadDialog({ refund, onClose, onSuccess }: EvidenceUploadDial
   };
 
   return (
-    <DialogContent className="max-w-2xl">
+    <>
       <DialogHeader>
         <DialogTitle>Upload Evidence</DialogTitle>
         <DialogDescription>
@@ -155,7 +155,7 @@ function EvidenceUploadDialog({ refund, onClose, onSuccess }: EvidenceUploadDial
           {isUploading ? 'Uploading...' : 'Upload Evidence'}
         </Button>
       </DialogFooter>
-    </DialogContent>
+    </>
   );
 }
 
@@ -409,18 +409,17 @@ export default function RefundsPage() {
 
                     {(refund.status === 'pending' || refund.status === 'under_review') && (
                       <div className="flex gap-2">
-                        <Dialog open={evidenceDialogOpen} onOpenChange={setEvidenceDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedRefund(refund)}
-                            >
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add Evidence
-                            </Button>
-                          </DialogTrigger>
-                        </Dialog>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedRefund(refund);
+                            setEvidenceDialogOpen(true);
+                          }}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Evidence
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -431,14 +430,16 @@ export default function RefundsPage() {
         </div>
       )}
 
-      <EvidenceUploadDialog
-        refund={selectedRefund!}
-        onClose={() => {
-          setEvidenceDialogOpen(false);
-          setSelectedRefund(null);
-        }}
-        onSuccess={loadRefundData}
-      />
+      <Dialog open={evidenceDialogOpen} onOpenChange={setEvidenceDialogOpen}>
+        <EvidenceUploadDialog
+          refund={selectedRefund!}
+          onClose={() => {
+            setEvidenceDialogOpen(false);
+            setSelectedRefund(null);
+          }}
+          onSuccess={loadRefundData}
+        />
+      </Dialog>
     </div>
   );
 }

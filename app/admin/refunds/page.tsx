@@ -260,170 +260,21 @@ export default function AdminRefundsPage() {
                         </TableCell>
                         <TableCell>
                           {(refund.status === 'pending' || refund.status === 'under_review') ? (
-                            <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
-                              <DialogTrigger asChild>
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      setSelectedRefund(refund);
-                                      setAdminNotes('');
-                                    }}
-                                    className="text-green-600 hover:text-green-700"
-                                  >
-                                    <CheckCircle className="h-3 w-3 mr-1" />
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      setSelectedRefund(refund);
-                                      setAdminNotes('');
-                                    }}
-                                    className="text-red-600 hover:text-red-700"
-                                  >
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                    Deny
-                                  </Button>
-                                </div>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                                <DialogHeader>
-                                  <DialogTitle>
-                                    Review Refund Request #{refund.id.slice(0, 8)}...
-                                  </DialogTitle>
-                                  <DialogDescription>
-                                    Review evidence and make a decision for transaction {refund.transactionId}
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-6">
-                                  {/* Transaction Details */}
-                                  <div>
-                                    <Label className="text-sm font-medium">Transaction Details</Label>
-                                    <div className="mt-2 p-3 bg-muted rounded">
-                                      <div className="grid grid-cols-2 gap-4 text-sm">
-                                        <div>
-                                          <span className="font-medium">Type:</span> {transaction?.type || 'Unknown'}
-                                        </div>
-                                        <div>
-                                          <span className="font-medium">Amount:</span> {transaction ? formatAmount(transaction.amount, transaction.currency) : 'N/A'}
-                                        </div>
-                                        <div>
-                                          <span className="font-medium">Buyer:</span> {refund.buyer}
-                                        </div>
-                                        <div>
-                                          <span className="font-medium">Created:</span> {formatDate(refund.createdAt)}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Reason */}
-                                  <div>
-                                    <Label className="text-sm font-medium">Refund Reason</Label>
-                                    <p className="mt-1 text-sm text-muted-foreground">{refund.reason}</p>
-                                  </div>
-
-                                  {/* Evidence */}
-                                  {refund.evidence && refund.evidence.length > 0 && (
-                                    <div>
-                                      <Label className="text-sm font-medium">Evidence ({refund.evidence.length})</Label>
-                                      <div className="mt-2 space-y-3">
-                                        {refund.evidence.map((evidence) => (
-                                          <div key={evidence.id} className="border rounded p-3">
-                                            <div className="flex items-center gap-3 mb-2">
-                                              {evidence.mimeType.startsWith('image/') ? (
-                                                <Image className="h-5 w-5 text-blue-600" />
-                                              ) : (
-                                                <FileText className="h-5 w-5 text-gray-600" />
-                                              )}
-                                              <div className="flex-1">
-                                                <div className="font-medium text-sm">{evidence.originalName}</div>
-                                                <div className="text-xs text-muted-foreground">
-                                                  {(evidence.size / 1024 / 1024).toFixed(2)} MB • {formatDate(evidence.uploadedAt)}
-                                                </div>
-                                              </div>
-                                              <div className="flex gap-2">
-                                                <Button
-                                                  variant="outline"
-                                                  size="sm"
-                                                  onClick={() => window.open(evidence.url, '_blank')}
-                                                >
-                                                  <Eye className="h-3 w-3 mr-1" />
-                                                  View
-                                                </Button>
-                                                <Button
-                                                  variant="outline"
-                                                  size="sm"
-                                                  onClick={() => {
-                                                    const link = document.createElement('a');
-                                                    link.href = evidence.url;
-                                                    link.download = evidence.originalName;
-                                                    link.click();
-                                                  }}
-                                                >
-                                                  <Download className="h-3 w-3 mr-1" />
-                                                  Download
-                                                </Button>
-                                              </div>
-                                            </div>
-                                            {evidence.tags && evidence.tags.length > 0 && (
-                                              <div className="flex gap-1 flex-wrap">
-                                                {evidence.tags.map((tag) => (
-                                                  <Badge key={tag} variant="outline" className="text-xs">
-                                                    {tag}
-                                                  </Badge>
-                                                ))}
-                                              </div>
-                                            )}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Admin Notes */}
-                                  <div>
-                                    <Label htmlFor="adminNotes">Admin Notes</Label>
-                                    <Textarea
-                                      id="adminNotes"
-                                      placeholder="Add notes about this decision..."
-                                      value={adminNotes}
-                                      onChange={(e) => setAdminNotes(e.target.value)}
-                                      rows={3}
-                                    />
-                                  </div>
-                                </div>
-                                <DialogFooter className="flex gap-2">
-                                  <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                      setActionDialogOpen(false);
-                                      setAdminNotes('');
-                                      setSelectedRefund(null);
-                                    }}
-                                  >
-                                    Cancel
-                                  </Button>
-                                  <Button
-                                    onClick={() => handleRefundAction('deny')}
-                                    disabled={!adminNotes.trim() || processingRefund === refund.id}
-                                    variant="destructive"
-                                  >
-                                    {processingRefund === refund.id ? 'Processing...' : 'Deny'}
-                                  </Button>
-                                  <Button
-                                    onClick={() => handleRefundAction('approve')}
-                                    disabled={!adminNotes.trim() || processingRefund === refund.id}
-                                    className="bg-green-600 hover:bg-green-700"
-                                  >
-                                    {processingRefund === refund.id ? 'Processing...' : 'Approve'}
-                                  </Button>
-                                </DialogFooter>
-                              </DialogContent>
-                            </Dialog>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedRefund(refund);
+                                  setAdminNotes('');
+                                  setActionDialogOpen(true);
+                                }}
+                                className="text-green-600 hover:text-green-700"
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Review
+                              </Button>
+                            </div>
                           ) : (
                             <div className="text-sm text-muted-foreground">
                               {refund.processedAt && (
@@ -446,6 +297,146 @@ export default function AdminRefundsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Review Dialog - moved outside table */}
+      <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Review Refund Request #{selectedRefund?.id.slice(0, 8)}...
+            </DialogTitle>
+            <DialogDescription>
+              Review evidence and make a decision for transaction {selectedRefund?.transactionId}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRefund && (
+            <div className="space-y-6">
+              {/* Transaction Details */}
+              <div>
+                <Label className="text-sm font-medium">Transaction Details</Label>
+                <div className="mt-2 p-3 bg-muted rounded">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">Type:</span> {getTransactionForRefund(selectedRefund.transactionId)?.type || 'Unknown'}
+                    </div>
+                    <div>
+                      <span className="font-medium">Amount:</span> {getTransactionForRefund(selectedRefund.transactionId) ? formatAmount(getTransactionForRefund(selectedRefund.transactionId).amount, getTransactionForRefund(selectedRefund.transactionId).currency) : 'N/A'}
+                    </div>
+                    <div>
+                      <span className="font-medium">Buyer:</span> {selectedRefund.buyer}
+                    </div>
+                    <div>
+                      <span className="font-medium">Created:</span> {formatDate(selectedRefund.createdAt)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reason */}
+              <div>
+                <Label className="text-sm font-medium">Refund Reason</Label>
+                <p className="mt-1 text-sm text-muted-foreground">{selectedRefund.reason}</p>
+              </div>
+
+              {/* Evidence */}
+              {selectedRefund.evidence && selectedRefund.evidence.length > 0 && (
+                <div>
+                  <Label className="text-sm font-medium">Evidence ({selectedRefund.evidence.length})</Label>
+                  <div className="mt-2 space-y-3">
+                    {selectedRefund.evidence.map((evidence) => (
+                      <div key={evidence.id} className="border rounded p-3">
+                        <div className="flex items-center gap-3 mb-2">
+                          {evidence.mimeType.startsWith('image/') ? (
+                            <Image className="h-5 w-5 text-blue-600" />
+                          ) : (
+                            <FileText className="h-5 w-5 text-gray-600" />
+                          )}
+                          <div className="flex-1">
+                            <div className="font-medium text-sm">{evidence.originalName}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {(evidence.size / 1024 / 1024).toFixed(2)} MB • {formatDate(evidence.uploadedAt)}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(evidence.url, '_blank')}
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              View
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = evidence.url;
+                                link.download = evidence.originalName;
+                                link.click();
+                              }}
+                            >
+                              <Download className="h-3 w-3 mr-1" />
+                              Download
+                            </Button>
+                          </div>
+                        </div>
+                        {evidence.tags && evidence.tags.length > 0 && (
+                          <div className="flex gap-1 flex-wrap">
+                            {evidence.tags.map((tag) => (
+                              <Badge key={tag} variant="outline" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Admin Notes */}
+              <div>
+                <Label htmlFor="adminNotes">Admin Notes</Label>
+                <Textarea
+                  id="adminNotes"
+                  placeholder="Add notes about this decision..."
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setActionDialogOpen(false);
+                setAdminNotes('');
+                setSelectedRefund(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleRefundAction('deny')}
+              disabled={!adminNotes.trim() || processingRefund === selectedRefund?.id}
+              variant="destructive"
+            >
+              {processingRefund === selectedRefund?.id ? 'Processing...' : 'Deny'}
+            </Button>
+            <Button
+              onClick={() => handleRefundAction('approve')}
+              disabled={!adminNotes.trim() || processingRefund === selectedRefund?.id}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {processingRefund === selectedRefund?.id ? 'Processing...' : 'Approve'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
