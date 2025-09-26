@@ -310,6 +310,22 @@ export default function AdminHome() {
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
+              📦 Orders
+            </CardTitle>
+            <CardDescription>
+              Manage order statuses and shipment updates
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/admin/orders">
+              <Button className="w-full">Manage Orders</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
               🔄 Refunds
             </CardTitle>
             <CardDescription>

@@ -5,7 +5,7 @@ import { NetworkToggle } from "@/components/network-toggle"
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Package, Receipt } from "lucide-react"
+import { Package, Receipt, Search } from "lucide-react"
 
 export function Header() {
   return (
@@ -27,6 +27,12 @@ export function Header() {
                 <Link href="/transactions" className="flex items-center gap-2">
                   <Receipt className="h-4 w-4" />
                   Transactions
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/orders" className="flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  Orders
                 </Link>
               </Button>
               <Button variant="ghost" size="sm" asChild>
