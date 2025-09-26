@@ -4,7 +4,7 @@ import { getTransactionById } from '@/lib/transactions'
 
 export async function POST(request: NextRequest) {
   try {
-    const { transactionId, reason, buyerAddress } = await request.json()
+    const { transactionId, reason, buyerAddress, evidence } = await request.json()
     
     // Validate required fields
     if (!transactionId || !reason) {
@@ -41,8 +41,8 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Create refund request
-    const refundRequest = await createRefundRequest(transactionId, buyerWallet, reason)
+    // Create refund request with optional evidence
+    const refundRequest = await createRefundRequest(transactionId, buyerWallet, reason, evidence)
     
     // Create audit log for refund request
     try {
@@ -72,6 +72,13 @@ export async function POST(request: NextRequest) {
     
     // Trigger notification for buyer about refund request submission
     try {
+      const notificationTitle = refundRequest.status === 'under_review' 
+        ? 'Refund Request Under Review' 
+        : 'Refund Request Submitted'
+      const notificationMessage = refundRequest.status === 'under_review'
+        ? 'Your refund request with evidence has been submitted and is now under review.'
+        : 'Your refund request has been submitted and is pending review.'
+        
       await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications`, {
         method: 'POST',
         headers: {
@@ -80,8 +87,8 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           type: 'info',
           category: 'refund',
-          title: 'Refund Request Submitted',
-          message: 'Your refund request has been submitted and is under review.',
+          title: notificationTitle,
+          message: notificationMessage,
           autoDismiss: true,
           dismissAfter: 5000,
         }),
@@ -92,6 +99,13 @@ export async function POST(request: NextRequest) {
     
     // Trigger notification for admin about new refund request
     try {
+      const adminTitle = refundRequest.status === 'under_review' 
+        ? 'New Refund Request - Under Review' 
+        : 'New Refund Request - Pending'
+      const adminMessage = refundRequest.status === 'under_review'
+        ? `🔍 Refund with evidence for ${transaction.type} (${transaction.amount} ${transaction.currency}) by ${buyerWallet.slice(0, 6)}...${buyerWallet.slice(-4)} - Evidence provided, under review`
+        : `📋 New refund request for ${transaction.type} (${transaction.amount} ${transaction.currency}) by ${buyerWallet.slice(0, 6)}...${buyerWallet.slice(-4)} - Pending review`
+        
       await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/notifications`, {
         method: 'POST',
         headers: {
@@ -100,8 +114,8 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           type: 'warning',
           category: 'admin',
-          title: 'New Refund Request',
-          message: `Refund requested for ${transaction.type} transaction ${transactionId} by ${buyerWallet.slice(0, 6)}...${buyerWallet.slice(-4)}`,
+          title: adminTitle,
+          message: adminMessage,
           autoDismiss: false,
         }),
       });

@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, RefreshCw, RotateCcw, CheckCircle, XCircle, MessageSquare, ExternalLink } from 'lucide-react';
+import { Shield, RefreshCw, RotateCcw, CheckCircle, XCircle, MessageSquare, ExternalLink, Eye, Image, FileText, Download, Clock, AlertCircle } from 'lucide-react';
 import { isAdminWallet } from '@/lib/admin-auth';
 import { RefundRequest } from '@/lib/refunds';
 import { Transaction } from '@/lib/transactions';
@@ -118,10 +118,14 @@ export default function AdminRefundsPage() {
     switch (status) {
       case 'pending':
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Pending</Badge>
+      case 'under_review':
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Under Review</Badge>
       case 'approved':
         return <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Approved</Badge>
       case 'denied':
         return <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Denied</Badge>
+      case 'auto_refunded':
+        return <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">Auto Refunded</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
     }
@@ -255,7 +259,7 @@ export default function AdminRefundsPage() {
                           {formatDate(refund.createdAt)}
                         </TableCell>
                         <TableCell>
-                          {refund.status === 'pending' ? (
+                          {(refund.status === 'pending' || refund.status === 'under_review') ? (
                             <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
                               <DialogTrigger asChild>
                                 <div className="flex gap-2">
@@ -285,16 +289,102 @@ export default function AdminRefundsPage() {
                                   </Button>
                                 </div>
                               </DialogTrigger>
-                              <DialogContent>
+                              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                                 <DialogHeader>
                                   <DialogTitle>
-                                    {selectedRefund?.id === refund.id ? 'Approve' : 'Deny'} Refund Request
+                                    Review Refund Request #{refund.id.slice(0, 8)}...
                                   </DialogTitle>
                                   <DialogDescription>
-                                    {selectedRefund?.id === refund.id ? 'Approve' : 'Deny'} refund request for transaction {refund.transactionId}
+                                    Review evidence and make a decision for transaction {refund.transactionId}
                                   </DialogDescription>
                                 </DialogHeader>
-                                <div className="space-y-4">
+                                <div className="space-y-6">
+                                  {/* Transaction Details */}
+                                  <div>
+                                    <Label className="text-sm font-medium">Transaction Details</Label>
+                                    <div className="mt-2 p-3 bg-muted rounded">
+                                      <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                          <span className="font-medium">Type:</span> {transaction?.type || 'Unknown'}
+                                        </div>
+                                        <div>
+                                          <span className="font-medium">Amount:</span> {transaction ? formatAmount(transaction.amount, transaction.currency) : 'N/A'}
+                                        </div>
+                                        <div>
+                                          <span className="font-medium">Buyer:</span> {refund.buyer}
+                                        </div>
+                                        <div>
+                                          <span className="font-medium">Created:</span> {formatDate(refund.createdAt)}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Reason */}
+                                  <div>
+                                    <Label className="text-sm font-medium">Refund Reason</Label>
+                                    <p className="mt-1 text-sm text-muted-foreground">{refund.reason}</p>
+                                  </div>
+
+                                  {/* Evidence */}
+                                  {refund.evidence && refund.evidence.length > 0 && (
+                                    <div>
+                                      <Label className="text-sm font-medium">Evidence ({refund.evidence.length})</Label>
+                                      <div className="mt-2 space-y-3">
+                                        {refund.evidence.map((evidence) => (
+                                          <div key={evidence.id} className="border rounded p-3">
+                                            <div className="flex items-center gap-3 mb-2">
+                                              {evidence.mimeType.startsWith('image/') ? (
+                                                <Image className="h-5 w-5 text-blue-600" />
+                                              ) : (
+                                                <FileText className="h-5 w-5 text-gray-600" />
+                                              )}
+                                              <div className="flex-1">
+                                                <div className="font-medium text-sm">{evidence.originalName}</div>
+                                                <div className="text-xs text-muted-foreground">
+                                                  {(evidence.size / 1024 / 1024).toFixed(2)} MB • {formatDate(evidence.uploadedAt)}
+                                                </div>
+                                              </div>
+                                              <div className="flex gap-2">
+                                                <Button
+                                                  variant="outline"
+                                                  size="sm"
+                                                  onClick={() => window.open(evidence.url, '_blank')}
+                                                >
+                                                  <Eye className="h-3 w-3 mr-1" />
+                                                  View
+                                                </Button>
+                                                <Button
+                                                  variant="outline"
+                                                  size="sm"
+                                                  onClick={() => {
+                                                    const link = document.createElement('a');
+                                                    link.href = evidence.url;
+                                                    link.download = evidence.originalName;
+                                                    link.click();
+                                                  }}
+                                                >
+                                                  <Download className="h-3 w-3 mr-1" />
+                                                  Download
+                                                </Button>
+                                              </div>
+                                            </div>
+                                            {evidence.tags && evidence.tags.length > 0 && (
+                                              <div className="flex gap-1 flex-wrap">
+                                                {evidence.tags.map((tag) => (
+                                                  <Badge key={tag} variant="outline" className="text-xs">
+                                                    {tag}
+                                                  </Badge>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Admin Notes */}
                                   <div>
                                     <Label htmlFor="adminNotes">Admin Notes</Label>
                                     <Textarea
@@ -306,7 +396,7 @@ export default function AdminRefundsPage() {
                                     />
                                   </div>
                                 </div>
-                                <DialogFooter>
+                                <DialogFooter className="flex gap-2">
                                   <Button
                                     variant="outline"
                                     onClick={() => {
@@ -318,12 +408,18 @@ export default function AdminRefundsPage() {
                                     Cancel
                                   </Button>
                                   <Button
-                                    onClick={() => handleRefundAction(selectedRefund?.id === refund.id ? 'approve' : 'deny')}
+                                    onClick={() => handleRefundAction('deny')}
                                     disabled={!adminNotes.trim() || processingRefund === refund.id}
-                                    className={selectedRefund?.id === refund.id ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                                    variant="destructive"
                                   >
-                                    {processingRefund === refund.id ? 'Processing...' : 
-                                     selectedRefund?.id === refund.id ? 'Approve' : 'Deny'}
+                                    {processingRefund === refund.id ? 'Processing...' : 'Deny'}
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleRefundAction('approve')}
+                                    disabled={!adminNotes.trim() || processingRefund === refund.id}
+                                    className="bg-green-600 hover:bg-green-700"
+                                  >
+                                    {processingRefund === refund.id ? 'Processing...' : 'Approve'}
                                   </Button>
                                 </DialogFooter>
                               </DialogContent>

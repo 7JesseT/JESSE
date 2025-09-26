@@ -3,11 +3,25 @@ export interface RefundRequest {
   transactionId: string
   buyer: string // wallet address
   reason: string
-  status: 'pending' | 'approved' | 'denied'
+  status: 'pending' | 'under_review' | 'approved' | 'denied' | 'auto_refunded'
   createdAt: string
   processedAt?: string
   processedBy?: string // admin wallet that processed the refund
   adminNotes?: string // admin notes for approval/denial
+  evidence?: EvidenceFile[] // evidence files uploaded by buyer
+  updatedAt?: string // last update timestamp
+  autoRefundCheckedAt?: string // when auto-refund check was last performed
+}
+
+export interface EvidenceFile {
+  id: string
+  filename: string
+  originalName: string
+  mimeType: string
+  size: number
+  uploadedAt: string
+  url: string
+  tags?: string[] // e.g., ['duplicate', 'failed_delivery', 'technical_issue']
 }
 
 export interface RefundsData {
@@ -42,7 +56,8 @@ export const saveRefundsData = async (data: RefundsData): Promise<void> => {
 export const createRefundRequest = async (
   transactionId: string,
   buyer: string,
-  reason: string
+  reason: string,
+  evidence?: EvidenceFile[]
 ): Promise<RefundRequest> => {
   const data = await getRefundsData()
   
@@ -57,8 +72,10 @@ export const createRefundRequest = async (
     transactionId,
     buyer,
     reason,
-    status: 'pending',
-    createdAt: new Date().toISOString()
+    status: evidence && evidence.length > 0 ? 'under_review' : 'pending',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    evidence: evidence || []
   }
   
   data.refunds.push(newRefundRequest)
@@ -100,7 +117,53 @@ export const updateRefundStatus = async (
     status,
     processedAt: new Date().toISOString(),
     processedBy,
-    adminNotes
+    adminNotes,
+    updatedAt: new Date().toISOString()
+  }
+  
+  await saveRefundsData(data)
+  
+  return data.refunds[refundIndex]
+}
+
+export const addEvidenceToRefund = async (
+  id: string,
+  evidence: EvidenceFile[]
+): Promise<RefundRequest | null> => {
+  const data = await getRefundsData()
+  const refundIndex = data.refunds.findIndex(r => r.id === id)
+  
+  if (refundIndex === -1) {
+    return null
+  }
+  
+  const currentEvidence = data.refunds[refundIndex].evidence || []
+  data.refunds[refundIndex] = {
+    ...data.refunds[refundIndex],
+    evidence: [...currentEvidence, ...evidence],
+    status: 'under_review',
+    updatedAt: new Date().toISOString()
+  }
+  
+  await saveRefundsData(data)
+  
+  return data.refunds[refundIndex]
+}
+
+export const markAutoRefundChecked = async (
+  id: string
+): Promise<RefundRequest | null> => {
+  const data = await getRefundsData()
+  const refundIndex = data.refunds.findIndex(r => r.id === id)
+  
+  if (refundIndex === -1) {
+    return null
+  }
+  
+  data.refunds[refundIndex] = {
+    ...data.refunds[refundIndex],
+    autoRefundCheckedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   }
   
   await saveRefundsData(data)
@@ -111,4 +174,16 @@ export const updateRefundStatus = async (
 export const getPendingRefundRequests = async (): Promise<RefundRequest[]> => {
   const data = await getRefundsData()
   return data.refunds.filter(r => r.status === 'pending')
+}
+
+export const getUnderReviewRefundRequests = async (): Promise<RefundRequest[]> => {
+  const data = await getRefundsData()
+  return data.refunds.filter(r => r.status === 'under_review')
+}
+
+export const getEligibleForAutoRefund = async (): Promise<RefundRequest[]> => {
+  const data = await getRefundsData()
+  return data.refunds.filter(r => 
+    r.status === 'pending' || r.status === 'under_review'
+  )
 }

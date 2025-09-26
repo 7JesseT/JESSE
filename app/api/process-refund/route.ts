@@ -265,10 +265,10 @@ export async function POST(request: NextRequest) {
             body: JSON.stringify({
               type: 'success',
               category: 'refund',
-              title: 'Refund Processed',
-              message: `💸 Refund of ${transaction.amount} ${transaction.currency} processed successfully for ${refundRequest.buyer.slice(0, 6)}...${refundRequest.buyer.slice(-4)}${burnTxHash ? ' 🔥 NFT burned' : ''}`,
+              title: 'Refund Approved & Processed',
+              message: `💸 Refund of ${transaction.amount} ${transaction.currency} approved and processed for ${refundRequest.buyer.slice(0, 6)}...${refundRequest.buyer.slice(-4)}${burnTxHash ? ' 🔥 NFT burned' : ''}`,
               autoDismiss: true,
-              dismissAfter: 5000,
+              dismissAfter: 7000,
             }),
           });
         } catch (notificationError) {
