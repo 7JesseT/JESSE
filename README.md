@@ -46,6 +46,170 @@ NEXT_PUBLIC_DEFAULT_NETWORK=sepolia
 NEXT_PUBLIC_RPC_URL=https://sepolia.base.org
 ```
 
+## Day 26 — Analytics
+
+### Overview
+The analytics system provides comprehensive metrics and insights for the platform. It includes server-side metric endpoints, an improved admin dashboard, demo data seeding, CSV export functionality, and performance caching.
+
+### Features
+- **Server Metric Endpoints**: RESTful APIs for summary and daily metrics
+- **Admin Dashboard**: Enhanced analytics page with summary cards and charts
+- **Demo Data Seeding**: Generate realistic fake data for development and testing
+- **CSV Export**: Download analytics data as CSV files
+- **Performance Caching**: In-memory caching with 30-second TTL for fast responses
+- **Error Handling**: Graceful handling of missing or malformed data files
+
+### API Endpoints
+
+#### GET /api/admin/metrics/summary
+Get summary metrics for a date range:
+```bash
+curl "http://localhost:3000/api/admin/metrics/summary?from=2025-01-01&to=2025-01-31"
+```
+
+Response:
+```json
+{
+  "totalTips": 125.50,
+  "totalRevenueUSDC": 2500.75,
+  "totalRefunds": 3,
+  "totalMints": 45,
+  "shipmentsDelivered": 12,
+  "shipmentsPending": 2,
+  "timeframe": "2025-01-01 to 2025-01-31"
+}
+```
+
+#### GET /api/admin/metrics/daily
+Get daily metrics for the last N days:
+```bash
+curl "http://localhost:3000/api/admin/metrics/daily?days=30"
+```
+
+Response:
+```json
+[
+  {
+    "date": "2025-01-15",
+    "tipsCount": 3,
+    "revenueUsd": 125.50,
+    "refundsCount": 1,
+    "mintsCount": 2,
+    "shipmentsDelivered": 1,
+    "shipmentsPending": 0
+  }
+]
+```
+
+#### POST /api/admin/metrics/seed (Development Only)
+Generate demo data for testing:
+```bash
+curl -X POST "http://localhost:3000/api/admin/metrics/seed"
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Demo data generated successfully",
+  "dataGenerated": {
+    "transactions": 150,
+    "refunds": 8,
+    "shipments": 45,
+    "mints": 30,
+    "tips": 25
+  }
+}
+```
+
+### Admin Dashboard
+Access the analytics dashboard at `/admin/analytics` (requires admin authentication):
+
+#### Summary Cards
+- **Total Revenue**: USDC equivalent of all transactions
+- **Total Tips**: Combined ETH and USDC tips
+- **Total Refunds**: Number of refund requests
+- **NFTs Minted**: Total attendance NFTs
+- **Shipments Delivered**: Successfully delivered shipments
+- **Shipments Pending**: In transit or pending shipments
+
+#### Charts
+- **Daily Revenue Trend**: Area chart showing revenue over time
+- **Daily Activity**: Bar chart showing tips, refunds, and mints by day
+
+#### Controls
+- **Date Range Selector**: Filter data by last 7, 30 days, or all time
+- **Seed Demo Data**: Generate realistic test data (development only)
+- **Export CSV**: Download visible chart data as CSV
+
+### Data Sources
+The analytics system reads from these JSON files in the `/data` directory:
+- `transactions.json`: Transaction records
+- `refunds.json`: Refund requests and status
+- `shipments.json`: Shipment tracking data
+- `mints.json`: NFT mint records
+- `tips.json`: TipJar payment data
+
+### Performance & Caching
+- **In-Memory Cache**: 30-second TTL to avoid heavy recomputation
+- **Cache Keys**: Based on date ranges and parameters
+- **Automatic Invalidation**: Cache expires after 30 seconds
+- **Error Recovery**: Graceful fallback when data files are missing
+
+### Error Handling
+- **Missing Files**: Returns zeros when JSON files don't exist
+- **Malformed Data**: Handles JSON parsing errors gracefully
+- **Invalid Dates**: Validates date parameters and returns appropriate errors
+- **Network Errors**: Proper HTTP status codes and error messages
+
+### Development & Testing
+
+#### Seed Demo Data
+In development mode, use the "Seed Demo Data" button or API endpoint to generate realistic test data:
+- 30 days of transaction history
+- Randomized but deterministic data (seed: 12345)
+- Backs up existing files before overwriting
+- Generates transactions, refunds, shipments, mints, and tips
+
+#### Acceptance Tests
+Run the test script to verify all functionality:
+```bash
+node scripts/check-analytics.js
+```
+
+Test coverage:
+- Daily metrics endpoint
+- Summary metrics endpoint
+- Seed data generation (development only)
+- CSV generation and format validation
+- Error handling for invalid parameters
+
+#### Sample Test Commands
+```bash
+# Test daily metrics
+curl "http://localhost:3000/api/admin/metrics/daily?days=7"
+
+# Test summary metrics
+curl "http://localhost:3000/api/admin/metrics/summary?from=2025-01-01&to=2025-01-31"
+
+# Seed demo data (development only)
+curl -X POST "http://localhost:3000/api/admin/metrics/seed"
+```
+
+### Production Considerations
+For production deployments, consider:
+- **Database Backend**: Replace JSON files with a proper database
+- **Analytics Pipeline**: Use services like Mixpanel, Amplitude, or custom analytics
+- **Caching Strategy**: Implement Redis or similar for distributed caching
+- **Data Retention**: Implement data archiving and cleanup policies
+- **Monitoring**: Add metrics for endpoint performance and error rates
+
+### Security
+- **Admin Protection**: All endpoints require admin authentication
+- **Development Only**: Seed endpoint is disabled in production
+- **Input Validation**: Date parameters are validated and sanitized
+- **Error Messages**: Avoid exposing sensitive information in error responses
+
 ## Audit Logs (Day 24)
 
 ### Overview
