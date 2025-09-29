@@ -21,7 +21,7 @@ export function Header() {
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">BD</span>
               </div>
-               <h1 className="text-xl font-semibold text-foreground">{t('nav.dashboard')}</h1>
+               <h1 className="text-xl font-semibold text-foreground">Base Daily</h1>
             </Link>
           </div>
 
