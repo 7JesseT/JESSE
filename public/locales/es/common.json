@@ -1,0 +1,75 @@
+{
+  "nav": {
+    "dashboard": "Panel",
+    "files": "Archivos",
+    "transactions": "Transacciones",
+    "refunds": "Reembolsos",
+    "orders": "Pedidos",
+    "shipments": "Envíos",
+    "attendance": "Asistencia",
+    "tips": "Propinas",
+    "vip": "VIP",
+    "admin": "Administrador",
+    "language": "Idioma"
+  },
+  "home": {
+    "title": "Base Daily - Interacciones Onchain",
+    "description": "Tus interacciones onchain diarias en Base Sepolia. Propina creadores, acuña NFTs de asistencia, accede a contenido premium, compra archivos, y disfruta actualizaciones de funciones diarias con transacciones automáticas.",
+    "connectWallet": "Conectar Wallet",
+    "welcome": "Bienvenido a Base Daily",
+    "features": "Características",
+    "checkout": "Checkout de Creador"
+  },
+  "buttons": {
+    "connect": "Conectar",
+    "disconnect": "Desconectar",
+    "mint": "Acuñar NFT",
+    "tip": "Enviar Propina",
+    "purchase": "Comprar",
+    "requestRefund": "Solicitar Reembolso",
+    "downloadFile": "Descargar Archivo",
+    "uploadEvidence": "Subir Evidencia",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar"
+  },
+  "messages": {
+    "loading": "Cargando...",
+    "error": "Ocurrió un error",
+    "success": "Operación completada exitosamente",
+    "walletConnected": "Wallet conectada",
+    "walletDisconnected": "Wallet desconectada",
+    "transactionInProgress": "Transacción en progreso...",
+    "transactionSuccess": "Transacción completada exitosamente",
+    "transactionFailed": "Transacción falló",
+    "noTransactions": "No se encontraron transacciones",
+    "noFiles": "No se encontraron archivos"
+  },
+  "forms": {
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "amount": "Cantidad",
+    "recipient": "Destinatario",
+    "description": "Descripción",
+    "notes": "Notas",
+    "required": "Este campo es requerido",
+    "invalidEmail": "Dirección de correo inválida",
+    "invalidAmount": "Cantidad inválida"
+  },
+  "admin": {
+    "dashboard": "Panel de Administración",
+    "analytics": "Analíticas",
+    "audit": "Registros de Auditoría",
+    "users": "Usuarios",
+    "files": "Archivos",
+    "orders": "Pedidos",
+    "refunds": "Reembolsos",
+    "invites": "Invitaciones"
+  },
+  "language": {
+    "english": "Inglés",
+    "spanish": "Español"
+  }
+}

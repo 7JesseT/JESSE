@@ -7,6 +7,8 @@ import { WagmiProvider } from "wagmi"
 import { config } from "@/lib/wagmi"
 import { useState, useEffect } from "react"
 import { useWalletPersistence } from "@/hooks/use-wallet-persistence"
+import { I18nextProvider } from "react-i18next"
+import i18n from "@/lib/i18n"
 
 /**
  * Wallet Persistence Wrapper
@@ -31,12 +33,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <WalletPersistenceWrapper>
-          {children}
-        </WalletPersistenceWrapper>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <I18nextProvider i18n={i18n}>
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <WalletPersistenceWrapper>
+            {children}
+          </WalletPersistenceWrapper>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </I18nextProvider>
   )
 }

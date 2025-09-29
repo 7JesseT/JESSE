@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: "Base Daily - Onchain Interactions",
   description: "Daily onchain interactions on Base Sepolia - tip, mint, and access premium content",
   generator: "v0.app",
+  viewport: "width=device-width, initial-scale=1",
 }
 
 export default function RootLayout({

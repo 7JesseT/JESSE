@@ -1,0 +1,75 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "files": "Files",
+    "transactions": "Transactions",
+    "refunds": "Refunds",
+    "orders": "Orders",
+    "shipments": "Shipments",
+    "attendance": "Attendance",
+    "tips": "Tips",
+    "vip": "VIP",
+    "admin": "Admin",
+    "language": "Language"
+  },
+  "home": {
+    "title": "Base Daily - Onchain Interactions",
+    "description": "Your daily onchain interactions on Base Sepolia. Tip creators, mint attendance NFTs, access premium content, purchase files, and enjoy daily feature updates with automatic transactions.",
+    "connectWallet": "Connect Wallet",
+    "welcome": "Welcome to Base Daily",
+    "features": "Features",
+    "checkout": "Creator Checkout"
+  },
+  "buttons": {
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "mint": "Mint NFT",
+    "tip": "Send Tip",
+    "purchase": "Purchase",
+    "requestRefund": "Request Refund",
+    "downloadFile": "Download File",
+    "uploadEvidence": "Upload Evidence",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit"
+  },
+  "messages": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Operation completed successfully",
+    "walletConnected": "Wallet connected",
+    "walletDisconnected": "Wallet disconnected",
+    "transactionInProgress": "Transaction in progress...",
+    "transactionSuccess": "Transaction completed successfully",
+    "transactionFailed": "Transaction failed",
+    "noTransactions": "No transactions found",
+    "noFiles": "No files found"
+  },
+  "forms": {
+    "email": "Email",
+    "password": "Password",
+    "amount": "Amount",
+    "recipient": "Recipient",
+    "description": "Description",
+    "notes": "Notes",
+    "required": "This field is required",
+    "invalidEmail": "Invalid email address",
+    "invalidAmount": "Invalid amount"
+  },
+  "admin": {
+    "dashboard": "Admin Dashboard",
+    "analytics": "Analytics",
+    "audit": "Audit Logs",
+    "users": "Users",
+    "files": "Files",
+    "orders": "Orders",
+    "refunds": "Refunds",
+    "invites": "Invites"
+  },
+  "language": {
+    "english": "English",
+    "spanish": "Spanish"
+  }
+}
