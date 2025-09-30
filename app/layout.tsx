@@ -7,6 +7,19 @@ import "./globals.css"
 import { Providers } from "./providers"
 import { Suspense } from "react"
 
+// Runtime safety check for mainnet configuration
+if (typeof window === 'undefined') {
+  const defaultNetwork = process.env.NEXT_PUBLIC_DEFAULT_NETWORK
+  const paywallRecipient = process.env.NEXT_PUBLIC_PAYWALL_RECIPIENT
+  const confirmMainnet = process.env.CONFIRM_MAINNET
+
+  if (defaultNetwork === 'mainnet' && paywallRecipient && confirmMainnet !== 'true') {
+    console.warn('⚠️  WARNING: Running on mainnet with paywall recipient but CONFIRM_MAINNET is not set to true!')
+    console.warn('   This could result in real funds being sent to the paywall recipient.')
+    console.warn('   Set CONFIRM_MAINNET=true in your environment to confirm this is intentional.')
+  }
+}
+
 export const metadata: Metadata = {
   title: "Base Daily - Onchain Interactions",
   description: "Daily onchain interactions on Base Sepolia - tip, mint, and access premium content",

@@ -1,7 +1,11 @@
 
-## Base Daily
+# Base Daily
 
-Base Daily is a minimal, production-ready mini app showcasing daily onchain interactions on Base. It includes wallet persistence, mobile-friendly connections, a Tip Jar with recipient selection, Shipments Log, Attendance QR Minting, and an automated "daily feature + daily tx" flow. The app supports both Base Sepolia (testnet) and Base Mainnet with a robust network toggle system.
+Base Daily is a production-ready Next.js 14 application showcasing comprehensive onchain interactions on Base. Built with TypeScript, Tailwind CSS, wagmi/viem, and OnchainKit, it features a complete paywall system, invite links, VIP access, analytics, refunds, audit logs, and shipment tracking.
+
+## Architecture
+
+A modern full-stack dApp with Next.js 14 App Router, server-side payment verification, JSON-based data persistence, and comprehensive admin tooling for managing onchain interactions.
 
 ### Highlights
 - **Wallet persistence**: Auto-reconnects on reload using localStorage + Wagmi `autoConnect`.
@@ -512,55 +516,85 @@ Run the app and try:
 
 ## Getting Started
 
-### 1) Prerequisites
+### Prerequisites
 - Node.js 18+
-- A Base Sepolia RPC endpoint
-- WalletConnect Project ID (free at `https://cloud.walletconnect.com`)
+- pnpm (recommended) or npm
+- WalletConnect Project ID (free at [cloud.walletconnect.com](https://cloud.walletconnect.com))
 
-### 2) Install
+### Installation
 ```bash
-pnpm i
-# or
-npm i
-# or
-yarn
+# Clone the repository
+git clone <repository-url>
+cd base-daily
+
+# Install dependencies
+pnpm install
+
+# Copy environment template
+cp env.example .env.local
 ```
 
-### 3) Configure environment
-Create `.env.local` in the project root:
+### Environment Configuration
+Edit `.env.local` with your values:
 ```env
 # Network Configuration
+NEXT_PUBLIC_DEFAULT_NETWORK=sepolia
+CONFIRM_MAINNET=false
+
+# WalletConnect Project ID
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id_here
+
+# RPC URLs
 NEXT_PUBLIC_RPC_URL_SEPOLIA=https://sepolia.base.org
 NEXT_PUBLIC_RPC_URL_MAINNET=https://mainnet.base.org
-NEXT_PUBLIC_DEFAULT_NETWORK=sepolia
 
-# Wallet Configuration
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_wc_project_id
-NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_onchainkit_key
+# USDC Token Address (Base Sepolia)
+NEXT_PUBLIC_USDC_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
 
-# USDC token address (Base Sepolia)
-NEXT_PUBLIC_USDC_ADDRESS=0xYOUR_USDC_SEPOLIA_ADDRESS
+# Paywall Configuration
+NEXT_PUBLIC_PAYWALL_RECIPIENT=0x1234567890123456789012345678901234567890
 
-# Optional: change default paywall price
-NEXT_PUBLIC_PAYWALL_PRICE=0.001
-
-# Legacy support (backward compatibility)
-NEXT_PUBLIC_RPC_URL=https://sepolia.base.org
+# Admin Configuration
+NEXT_PUBLIC_ADMIN_WALLETS=["0x1234567890123456789012345678901234567890"]
 ```
 
-Notes:
-- Recipient addresses are configured in `/config/recipients.ts` - update the placeholder addresses with actual club addresses.
-- For USDC tips, set `NEXT_PUBLIC_USDC_ADDRESS` (Base Sepolia USDC). If USDC is not configured, the UI will prompt to use ETH.
-- The app defaults to Base Sepolia but can be switched to Base Mainnet using the network toggle.
-- **Mainnet Safety**: Always test on Sepolia first. Mainnet transactions require explicit confirmation and adequate balance.
-
-### 4) Run
+### Development
 ```bash
+# Start development server
 pnpm dev
-# or npm run dev / yarn dev
+
+# Run smoke tests
+pnpm run smoke
+
+# Build for production
+pnpm build
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3000` to view the application.
+
+### Deploy to Vercel
+1. Push your code to GitHub
+2. Connect your repository to Vercel
+3. Add environment variables from `.env.local` in Vercel dashboard
+4. Deploy
+
+### Seed Demo Data
+```bash
+# Start the development server
+pnpm dev
+
+# In another terminal, seed demo data
+curl -X POST http://localhost:3000/api/admin/metrics/seed
+```
+
+### Run Smoke Tests
+```bash
+# Test against local development server
+pnpm run smoke
+
+# Test against deployed URL
+pnpm run smoke -- --url https://your-app.vercel.app
+```
 
 ---
 
